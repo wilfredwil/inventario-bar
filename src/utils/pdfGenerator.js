@@ -4,63 +4,68 @@ import autoTable from 'jspdf-autotable';
 
 // Función principal para generar PDFs
 export const generateInventoryPDF = (type, inventory, providers = []) => {
-  const doc = new jsPDF();
-  let itemsToInclude = [];
-  let title = '';
-  let subtitle = '';
+  try {
+    const doc = new jsPDF();
+    let itemsToInclude = [];
+    let title = '';
+    let subtitle = '';
 
-  // Filtrar productos según el tipo de reporte
-  switch(type) {
-    case 'complete':
-      itemsToInclude = inventory;
-      title = 'REPORTE COMPLETO DE INVENTARIO';
-      subtitle = `Total de productos: ${inventory.length}`;
-      break;
-    
-    case 'low-stock':
-      itemsToInclude = inventory.filter(i => i.stock <= (i.umbral_low || 5) && i.stock > 0);
-      title = 'REPORTE DE STOCK BAJO';
-      subtitle = `Productos con stock bajo: ${itemsToInclude.length}`;
-      break;
-    
-    case 'out-of-stock':
-      itemsToInclude = inventory.filter(i => i.stock === 0);
-      title = 'REPORTE DE PRODUCTOS SIN STOCK';
-      subtitle = `Productos agotados: ${itemsToInclude.length}`;
-      break;
-    
-    case 'critical':
-      itemsToInclude = inventory.filter(i => i.stock <= (i.umbral_low || 5));
-      title = 'REPORTE DE STOCK CRÍTICO';
-      subtitle = `Productos críticos: ${itemsToInclude.length}`;
-      break;
-    
-    case 'by-category':
-      itemsToInclude = inventory;
-      title = 'REPORTE POR CATEGORÍAS';
-      subtitle = 'Inventario agrupado por categorías';
-      return generateCategoryPDF(doc, itemsToInclude, title, subtitle);
-    
-    case 'by-provider':
-      itemsToInclude = inventory.filter(i => i.stock <= (i.umbral_low || 5));
-      title = 'REPORTE DE REPOSICIÓN POR PROVEEDOR';
-      subtitle = 'Productos que necesitan reposición';
-      return generateProviderPDF(doc, itemsToInclude, providers, title, subtitle);
-    
-    case 'valuation':
-      itemsToInclude = inventory;
-      title = 'REPORTE DE VALORACIÓN DE INVENTARIO';
-      subtitle = 'Análisis financiero del inventario';
-      return generateValuationPDF(doc, itemsToInclude, title, subtitle);
-    
-    default:
-      itemsToInclude = inventory;
-      title = 'REPORTE DE INVENTARIO';
-      subtitle = '';
+    // Filtrar productos según el tipo de reporte
+    switch(type) {
+      case 'complete':
+        itemsToInclude = inventory;
+        title = 'REPORTE COMPLETO DE INVENTARIO';
+        subtitle = `Total de productos: ${inventory.length}`;
+        break;
+      
+      case 'low-stock':
+        itemsToInclude = inventory.filter(i => i.stock <= (i.umbral_low || 5) && i.stock > 0);
+        title = 'REPORTE DE STOCK BAJO';
+        subtitle = `Productos con stock bajo: ${itemsToInclude.length}`;
+        break;
+      
+      case 'out-of-stock':
+        itemsToInclude = inventory.filter(i => i.stock === 0);
+        title = 'REPORTE DE PRODUCTOS SIN STOCK';
+        subtitle = `Productos agotados: ${itemsToInclude.length}`;
+        break;
+      
+      case 'critical':
+        itemsToInclude = inventory.filter(i => i.stock <= (i.umbral_low || 5));
+        title = 'REPORTE DE STOCK CRÍTICO';
+        subtitle = `Productos críticos: ${itemsToInclude.length}`;
+        break;
+      
+      case 'by-category':
+        itemsToInclude = inventory;
+        title = 'REPORTE POR CATEGORÍAS';
+        subtitle = 'Inventario agrupado por categorías';
+        return generateCategoryPDF(doc, itemsToInclude, title, subtitle);
+      
+      case 'by-provider':
+        itemsToInclude = inventory.filter(i => i.stock <= (i.umbral_low || 5));
+        title = 'REPORTE DE REPOSICIÓN POR PROVEEDOR';
+        subtitle = 'Productos que necesitan reposición';
+        return generateProviderPDF(doc, itemsToInclude, providers, title, subtitle);
+      
+      case 'valuation':
+        itemsToInclude = inventory;
+        title = 'REPORTE DE VALORACIÓN DE INVENTARIO';
+        subtitle = 'Análisis financiero del inventario';
+        return generateValuationPDF(doc, itemsToInclude, title, subtitle);
+      
+      default:
+        itemsToInclude = inventory;
+        title = 'REPORTE DE INVENTARIO';
+        subtitle = '';
+    }
+
+    // Generar PDF estándar
+    generateStandardPDF(doc, itemsToInclude, title, subtitle);
+  } catch (error) {
+    console.error('Error generando PDF:', error);
+    alert('Error al generar el PDF. Por favor, intenta de nuevo.');
   }
-
-  // Generar PDF estándar
-  generateStandardPDF(doc, itemsToInclude, title, subtitle);
 };
 
 // PDF Estándar con tabla simple
@@ -130,53 +135,54 @@ const generateStandardPDF = (doc, items, title, subtitle) => {
     startY: currentY,
     head: [['Producto', 'Categoría', 'Stock', 'Unidad', 'Precio', 'Valor Total', 'Imp.']],
     body: tableData,
-    theme: 'striped',
+    theme: 'grid',
     headStyles: { 
       fillColor: [102, 126, 234],
       textColor: 255,
-      fontStyle: 'bold',
       fontSize: 9
     },
     styles: { 
       fontSize: 8,
-      cellPadding: 3
+      cellPadding: 2
     },
     columnStyles: {
-      0: { cellWidth: 50 },
-      1: { cellWidth: 25, halign: 'center' },
-      2: { cellWidth: 20, halign: 'center' },
-      3: { cellWidth: 20, halign: 'center' },
-      4: { cellWidth: 25, halign: 'right' },
-      5: { cellWidth: 25, halign: 'right' },
-      6: { cellWidth: 15, halign: 'center' }
+      1: { halign: 'center' },
+      2: { halign: 'center' },
+      3: { halign: 'center' },
+      4: { halign: 'right' },
+      5: { halign: 'right' },
+      6: { halign: 'center' }
     },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
+    margin: { left: 14, right: 14 },
     didDrawCell: (data) => {
-      // Resaltar productos importantes con fondo amarillo
-      if (data.section === 'body' && items[data.row.index]?.importante) {
-        doc.setFillColor(255, 243, 205); // Color amarillo suave
-        doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+      if (data.section === 'body') {
+        const item = items[data.row.index];
         
-        // Re-dibujar el texto encima
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(8);
-        const text = data.cell.text[0];
-        if (text) {
-          if (data.column.index === 2 || data.column.index === 6) { // Center
-            doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-          } else if (data.column.index === 4 || data.column.index === 5) { // Right
-            doc.text(text, data.cell.x + data.cell.width - 3, data.cell.y + data.cell.height / 2 + 2, { align: 'right' });
-          } else { // Left
-            doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+        // Resaltar productos importantes
+        if (item?.importante) {
+          doc.setFillColor(255, 243, 205);
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+          
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(8);
+          const text = data.cell.text[0];
+          if (text) {
+            if (data.column.index === 1 || data.column.index === 2 || data.column.index === 6) {
+              doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            } else if (data.column.index === 4 || data.column.index === 5) {
+              doc.text(text, data.cell.x + data.cell.width - 3, data.cell.y + data.cell.height / 2 + 2, { align: 'right' });
+            } else {
+              doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+            }
           }
         }
-      }
-      
-      // Icono de estrella para la columna "Importante"
-      if (data.column.index === 6 && data.cell.raw === '⭐') {
-        doc.setTextColor(245, 158, 11); // Color dorado para la estrella
-        doc.setFontSize(10);
-        doc.text('⭐', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 3, { align: 'center' });
+        
+        // Icono de estrella para la columna "Importante"
+        if (data.column.index === 6 && data.cell.raw === '⭐') {
+          doc.setTextColor(245, 158, 11);
+          doc.setFontSize(10);
+          doc.text('⭐', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 3, { align: 'center' });
+        }
       }
     }
   });
@@ -292,29 +298,33 @@ const generateCategoryPDF = (doc, items, title, subtitle) => {
       },
       margin: { left: 14, right: 14 },
       didDrawCell: (data) => {
-        // Resaltar productos importantes
-        if (data.section === 'body' && categoryItems[data.row.index]?.importante) {
-          doc.setFillColor(255, 243, 205);
-          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+        if (data.section === 'body') {
+          const item = categoryItems[data.row.index];
           
-          doc.setTextColor(0, 0, 0);
-          doc.setFontSize(8);
-          const text = data.cell.text[0];
-          if (text) {
-            if (data.column.index === 1 || data.column.index === 2 || data.column.index === 5) {
-              doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-            } else if (data.column.index === 3 || data.column.index === 4) {
-              doc.text(text, data.cell.x + data.cell.width - 3, data.cell.y + data.cell.height / 2 + 2, { align: 'right' });
-            } else {
-              doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+          // Resaltar productos importantes
+          if (item?.importante) {
+            doc.setFillColor(255, 243, 205);
+            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(8);
+            const text = data.cell.text[0];
+            if (text) {
+              if (data.column.index === 1 || data.column.index === 2 || data.column.index === 5) {
+                doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+              } else if (data.column.index === 3 || data.column.index === 4) {
+                doc.text(text, data.cell.x + data.cell.width - 3, data.cell.y + data.cell.height / 2 + 2, { align: 'right' });
+              } else {
+                doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+              }
             }
           }
-        }
-        
-        if (data.column.index === 5 && data.cell.raw === '⭐') {
-          doc.setTextColor(245, 158, 11);
-          doc.setFontSize(10);
-          doc.text('⭐', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+          
+          if (data.column.index === 5 && data.cell.raw === '⭐') {
+            doc.setTextColor(245, 158, 11);
+            doc.setFontSize(10);
+            doc.text('⭐', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+          }
         }
       }
     });
@@ -434,25 +444,29 @@ const generateProviderPDF = (doc, items, providers, title, subtitle) => {
       },
       margin: { left: 14, right: 14 },
       didDrawCell: (data) => {
-        // Resaltar productos importantes
-        if (data.section === 'body' && providerItems[data.row.index]?.importante) {
-          doc.setFillColor(255, 243, 205);
-          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+        if (data.section === 'body') {
+          const item = providerItems[data.row.index];
           
-          doc.setTextColor(0, 0, 0);
-          doc.setFontSize(8);
-          const text = data.cell.text[0];
-          if (text) {
-            if (data.column.index === 1 || data.column.index === 2 || data.column.index === 3 || data.column.index === 4) {
-              doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-            } else {
-              doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+          // Resaltar productos importantes
+          if (item?.importante) {
+            doc.setFillColor(255, 243, 205);
+            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(8);
+            const text = data.cell.text[0];
+            if (text) {
+              if (data.column.index === 1 || data.column.index === 2 || data.column.index === 3 || data.column.index === 4) {
+                doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+              } else {
+                doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+              }
             }
           }
-        }
-        
-        if (data.column.index === 4 && data.cell.raw === '⭐ Sí') {
-          doc.setTextColor(245, 158, 11);
+          
+          if (data.column.index === 4 && data.cell.raw === '⭐ Sí') {
+            doc.setTextColor(245, 158, 11);
+          }
         }
       }
     });

@@ -1,5 +1,5 @@
-// src/components/InventoryList.js
-import React, { useState } from 'react';
+// src/components/InventoryList.js - OPTIMIZADO
+import React, { useState, useMemo, useCallback } from 'react';
 import { Row, Col, Card, Table, Button, Form, Badge, InputGroup, Alert, Dropdown, ButtonGroup } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrash, FaStar, FaRegStar, FaSearch, FaFilePdf } from 'react-icons/fa';
 import { updateDoc, deleteDoc, doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
@@ -17,7 +17,6 @@ function InventoryList({ inventory, user, userRole, providers }) {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [focusMode, setFocusMode] = useState(false);
 
   const categories = [
     { value: 'all', label: 'Todas las categorías' },
@@ -41,40 +40,53 @@ function InventoryList({ inventory, user, userRole, providers }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Filtrar inventario
-  const filteredInventory = inventory.filter(item => {
-    const matchesSearch = item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.marca?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || item.tipo === categoryFilter;
-    const matchesStock = 
-      stockFilter === 'all' ? true :
-      stockFilter === 'low' ? (item.stock <= (item.umbral_low || 5) && item.stock > 0) :
-      stockFilter === 'out' ? item.stock === 0 :
-      stockFilter === 'good' ? item.stock > (item.umbral_low || 5) :
-      true;
-    
-    return matchesSearch && matchesCategory && matchesStock;
-  });
+  // Función auxiliar para verificar stock - ELIMINADO DUPLICACIÓN
+  const checkStockLevel = useCallback((item, level) => {
+    const umbral = item.umbral_low || 5;
+    switch (level) {
+      case 'low':
+        return item.stock <= umbral && item.stock > 0;
+      case 'out':
+        return item.stock === 0;
+      case 'good':
+        return item.stock > umbral;
+      default:
+        return true;
+    }
+  }, []);
 
-  // Estadísticas rápidas
-  const stats = {
+  // Filtrar inventario - OPTIMIZADO CON USEMEMO
+  const filteredInventory = useMemo(() => {
+    return inventory.filter(item => {
+      const matchesSearch = item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            item.marca?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' || item.tipo === categoryFilter;
+      const matchesStock = stockFilter === 'all' || checkStockLevel(item, stockFilter);
+      
+      return matchesSearch && matchesCategory && matchesStock;
+    });
+  }, [inventory, searchTerm, categoryFilter, stockFilter, checkStockLevel]);
+
+  // Estadísticas rápidas - OPTIMIZADO CON USEMEMO
+  const stats = useMemo(() => ({
     total: inventory.length,
-    lowStock: inventory.filter(i => i.stock <= (i.umbral_low || 5) && i.stock > 0).length,
-    outOfStock: inventory.filter(i => i.stock === 0).length,
+    lowStock: inventory.filter(i => checkStockLevel(i, 'low')).length,
+    outOfStock: inventory.filter(i => checkStockLevel(i, 'out')).length,
     important: inventory.filter(i => i.importante).length
-  };
+  }), [inventory, checkStockLevel]);
 
-  const handleAddItem = () => {
+  // Funciones de manejo - OPTIMIZADO CON USECALLBACK
+  const handleAddItem = useCallback(() => {
     setEditingItem(null);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleEditItem = (item) => {
+  const handleEditItem = useCallback((item) => {
     setEditingItem(item);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleDeleteItem = async (item) => {
+  const handleDeleteItem = useCallback(async (item) => {
     if (!window.confirm(`¿Estás seguro de eliminar "${item.nombre}"?`)) return;
 
     try {
@@ -91,16 +103,22 @@ function InventoryList({ inventory, user, userRole, providers }) {
 
       setSuccess(`"${item.nombre}" eliminado correctamente`);
       setTimeout(() => setSuccess(''), 3000);
-    } catch (error) {
-      console.error('Error eliminando producto:', error);
-      setError('Error al eliminar el producto');
+    } catch (err) {
+      console.error('Error eliminando producto:', err);
+      setError(`Error al eliminar el producto: ${err.message}`);
       setTimeout(() => setError(''), 3000);
     }
-  };
+  }, [user.email]);
 
-  const handleQuickStockUpdate = async (item, newStock) => {
+  const handleQuickStockUpdate = useCallback(async (item, newStock) => {
     try {
       const stockValue = parseFloat(newStock);
+      if (isNaN(stockValue) || stockValue < 0) {
+        setError('El stock debe ser un número válido mayor o igual a 0');
+        setTimeout(() => setError(''), 3000);
+        return;
+      }
+
       const previousStock = item.stock || 0;
 
       await updateDoc(doc(db, 'inventario', item.id), {
@@ -121,16 +139,16 @@ function InventoryList({ inventory, user, userRole, providers }) {
         stock_nuevo: stockValue
       });
       
-      setSuccess(`Stock de ${item.nombre} actualizado`);
+      setSuccess(`Stock de ${item.nombre} actualizado correctamente`);
       setTimeout(() => setSuccess(''), 2000);
-    } catch (error) {
-      console.error('Error actualizando stock:', error);
-      setError('Error actualizando el stock');
+    } catch (err) {
+      console.error('Error actualizando stock:', err);
+      setError(`Error actualizando el stock: ${err.message}`);
       setTimeout(() => setError(''), 3000);
     }
-  };
+  }, [user.email]);
 
-  const handleToggleImportante = async (item) => {
+  const handleToggleImportante = useCallback(async (item) => {
     try {
       await updateDoc(doc(db, 'inventario', item.id), {
         importante: !item.importante,
@@ -145,26 +163,28 @@ function InventoryList({ inventory, user, userRole, providers }) {
         detalles: `Producto ${!item.importante ? 'marcado' : 'desmarcado'} como importante`,
         tipo_inventario: 'bar'
       });
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (err) {
+      console.error('Error:', err);
+      setError(`Error al marcar como importante: ${err.message}`);
+      setTimeout(() => setError(''), 3000);
     }
-  };
+  }, [user.email]);
 
-  const generatePDF = (type) => {
-    generateInventoryPDF(type, inventory, providers);
-  };
+  const generatePDF = useCallback((type) => {
+    try {
+      generateInventoryPDF(type, inventory, providers);
+    } catch (err) {
+      console.error('Error generando PDF:', err);
+      setError('Error al generar el PDF. Por favor, intenta de nuevo.');
+      setTimeout(() => setError(''), 3000);
+    }
+  }, [inventory, providers]);
 
-  const getStockBadge = (item) => {
+  const getStockBadge = useCallback((item) => {
     if (item.stock === 0) return <Badge bg="danger">Sin Stock</Badge>;
-    if (item.stock <= (item.umbral_low || 5)) return <Badge bg="warning" text="dark">Stock Bajo</Badge>;
+    if (checkStockLevel(item, 'low')) return <Badge bg="warning" text="dark">Stock Bajo</Badge>;
     return <Badge bg="success">OK</Badge>;
-  };
-
-  const getStockColor = (item) => {
-    if (item.stock === 0) return '#dc3545';
-    if (item.stock <= (item.umbral_low || 5)) return '#ffc107';
-    return '#28a745';
-  };
+  }, [checkStockLevel]);
 
   return (
     <>
@@ -314,53 +334,34 @@ function InventoryList({ inventory, user, userRole, providers }) {
                               size="sm"
                               className="p-0"
                               onClick={() => handleToggleImportante(item)}
+                              title={item.importante ? 'Desmarcar como importante' : 'Marcar como importante'}
                             >
-                              {item.importante ? 
-                                <FaStar className="text-warning" /> : 
-                                <FaRegStar className="text-muted" />
-                              }
+                              {item.importante ? <FaStar style={{ color: '#ffc107' }} /> : <FaRegStar style={{ color: '#6c757d' }} />}
                             </Button>
                           </td>
                           <td>
-                            <div>
-                              {item.marca && <span style={{ color: '#6366f1', fontWeight: 600 }}>{item.marca}</span>}
-                              {item.marca && <span style={{ margin: '0 0.5rem', color: '#cbd5e1' }}>•</span>}
-                              <strong>{item.nombre}</strong>
-                            </div>
+                            <strong>{item.nombre}</strong>
+                            {item.marca && <div className="text-muted small">{item.marca}</div>}
                           </td>
-                          <td>
+                          <td className="text-center">
                             <Badge bg="secondary">{item.tipo}</Badge>
                           </td>
                           <td className="text-center">
-                            <Form.Control
-                              type="number"
-                              value={item.stock || 0}
-                              onChange={(e) => handleQuickStockUpdate(item, e.target.value)}
-                              style={{ 
-                                width: '80px', 
-                                margin: '0 auto',
-                                borderColor: getStockColor(item),
-                                color: getStockColor(item),
-                                fontWeight: 'bold',
-                                textAlign: 'center'
-                              }}
-                              step="0.01"
-                            />
-                            <small className="text-muted d-block mt-1">{item.unidad_medida}</small>
+                            <strong>{item.stock || 0}</strong> {item.unidad_medida}
                           </td>
                           <td className="text-center">
                             {getStockBadge(item)}
                           </td>
                           <td className="text-end">
-                            <strong>${(item.precio_venta || 0).toFixed(2)}</strong>
+                            ${(item.precio_venta || 0).toFixed(2)}
                           </td>
                           <td className="text-center">
                             <ButtonGroup size="sm">
-                              <Button variant="outline-primary" onClick={() => handleEditItem(item)}>
+                              <Button variant="outline-primary" onClick={() => handleEditItem(item)} title="Editar">
                                 <FaEdit />
                               </Button>
                               {(userRole === 'admin' || userRole === 'manager') && (
-                                <Button variant="outline-danger" onClick={() => handleDeleteItem(item)}>
+                                <Button variant="outline-danger" onClick={() => handleDeleteItem(item)} title="Eliminar">
                                   <FaTrash />
                                 </Button>
                               )}
