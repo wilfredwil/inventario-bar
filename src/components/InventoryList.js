@@ -1,11 +1,12 @@
-// src/components/InventoryList.js - OPTIMIZADO
-import React, { useState, useMemo, useCallback } from 'react';
+// src/components/InventoryList.js
+import React, { useState } from 'react';
 import { Row, Col, Card, Table, Button, Form, Badge, InputGroup, Alert, Dropdown, ButtonGroup } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaStar, FaRegStar, FaSearch, FaFilePdf } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaStar, FaRegStar, FaSearch, FaFilePdf, FaBarcode } from 'react-icons/fa';
 import { updateDoc, deleteDoc, doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import ProductModal from './ProductModal';
 import QuickStockMobile from './QuickStockMobile';
+import BarcodeScanner from './BarcodeScanner';
 import { generateInventoryPDF } from '../utils/pdfGenerator';
 
 function InventoryList({ inventory, user, userRole, providers }) {
@@ -17,13 +18,15 @@ function InventoryList({ inventory, user, userRole, providers }) {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [focusMode, setFocusMode] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   const categories = [
     { value: 'all', label: 'Todas las categorías' },
     { value: 'licor', label: 'Licores' },
     { value: 'vino', label: 'Vinos' },
     { value: 'cerveza', label: 'Cervezas' },
-    { value: 'whisky', label: 'Whiskys' },
+    { value: 'whiskey', label: 'Whiskeys' },
     { value: 'vodka', label: 'Vodkas' },
     { value: 'gin', label: 'Gins' },
     { value: 'ron', label: 'Rones' },
@@ -40,53 +43,49 @@ function InventoryList({ inventory, user, userRole, providers }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Función auxiliar para verificar stock - ELIMINADO DUPLICACIÓN
-  const checkStockLevel = useCallback((item, level) => {
-    const umbral = item.umbral_low || 5;
-    switch (level) {
-      case 'low':
-        return item.stock <= umbral && item.stock > 0;
-      case 'out':
-        return item.stock === 0;
-      case 'good':
-        return item.stock > umbral;
-      default:
-        return true;
-    }
-  }, []);
+  // Filtrar inventario
+  const filteredInventory = inventory.filter(item => {
+    const matchesSearch = item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.marca?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.codigo_barras?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || item.tipo === categoryFilter;
+    const matchesStock = 
+      stockFilter === 'all' ? true :
+      stockFilter === 'low' ? (item.stock <= (item.umbral_low || 5) && item.stock > 0) :
+      stockFilter === 'out' ? item.stock === 0 :
+      stockFilter === 'good' ? item.stock > (item.umbral_low || 5) :
+      true;
+    
+    return matchesSearch && matchesCategory && matchesStock;
+  });
 
-  // Filtrar inventario - OPTIMIZADO CON USEMEMO
-  const filteredInventory = useMemo(() => {
-    return inventory.filter(item => {
-      const matchesSearch = item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            item.marca?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || item.tipo === categoryFilter;
-      const matchesStock = stockFilter === 'all' || checkStockLevel(item, stockFilter);
-      
-      return matchesSearch && matchesCategory && matchesStock;
-    });
-  }, [inventory, searchTerm, categoryFilter, stockFilter, checkStockLevel]);
-
-  // Estadísticas rápidas - OPTIMIZADO CON USEMEMO
-  const stats = useMemo(() => ({
+  // Estadísticas rápidas
+  const stats = {
     total: inventory.length,
-    lowStock: inventory.filter(i => checkStockLevel(i, 'low')).length,
-    outOfStock: inventory.filter(i => checkStockLevel(i, 'out')).length,
+    lowStock: inventory.filter(i => i.stock <= (i.umbral_low || 5) && i.stock > 0).length,
+    outOfStock: inventory.filter(i => i.stock === 0).length,
     important: inventory.filter(i => i.importante).length
-  }), [inventory, checkStockLevel]);
+  };
 
-  // Funciones de manejo - OPTIMIZADO CON USECALLBACK
-  const handleAddItem = useCallback(() => {
+  const handleAddItem = () => {
     setEditingItem(null);
     setShowModal(true);
-  }, []);
+  };
 
-  const handleEditItem = useCallback((item) => {
+  const handleEditItem = (item) => {
     setEditingItem(item);
     setShowModal(true);
-  }, []);
+  };
 
-  const handleDeleteItem = useCallback(async (item) => {
+  const handleBarcodeDetected = (product) => {
+    // Abrir modal de edición del producto encontrado
+    handleEditItem(product);
+    setSuccess(`Producto encontrado: ${product.nombre}`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleDeleteItem = async (item) => {
     if (!window.confirm(`¿Estás seguro de eliminar "${item.nombre}"?`)) return;
 
     try {
@@ -103,22 +102,16 @@ function InventoryList({ inventory, user, userRole, providers }) {
 
       setSuccess(`"${item.nombre}" eliminado correctamente`);
       setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      console.error('Error eliminando producto:', err);
-      setError(`Error al eliminar el producto: ${err.message}`);
+    } catch (error) {
+      console.error('Error eliminando producto:', error);
+      setError('Error al eliminar el producto');
       setTimeout(() => setError(''), 3000);
     }
-  }, [user.email]);
+  };
 
-  const handleQuickStockUpdate = useCallback(async (item, newStock) => {
+  const handleQuickStockUpdate = async (item, newStock) => {
     try {
       const stockValue = parseFloat(newStock);
-      if (isNaN(stockValue) || stockValue < 0) {
-        setError('El stock debe ser un número válido mayor o igual a 0');
-        setTimeout(() => setError(''), 3000);
-        return;
-      }
-
       const previousStock = item.stock || 0;
 
       await updateDoc(doc(db, 'inventario', item.id), {
@@ -139,16 +132,16 @@ function InventoryList({ inventory, user, userRole, providers }) {
         stock_nuevo: stockValue
       });
       
-      setSuccess(`Stock de ${item.nombre} actualizado correctamente`);
+      setSuccess(`Stock de ${item.nombre} actualizado`);
       setTimeout(() => setSuccess(''), 2000);
-    } catch (err) {
-      console.error('Error actualizando stock:', err);
-      setError(`Error actualizando el stock: ${err.message}`);
+    } catch (error) {
+      console.error('Error actualizando stock:', error);
+      setError('Error actualizando el stock');
       setTimeout(() => setError(''), 3000);
     }
-  }, [user.email]);
+  };
 
-  const handleToggleImportante = useCallback(async (item) => {
+  const handleToggleImportante = async (item) => {
     try {
       await updateDoc(doc(db, 'inventario', item.id), {
         importante: !item.importante,
@@ -163,28 +156,26 @@ function InventoryList({ inventory, user, userRole, providers }) {
         detalles: `Producto ${!item.importante ? 'marcado' : 'desmarcado'} como importante`,
         tipo_inventario: 'bar'
       });
-    } catch (err) {
-      console.error('Error:', err);
-      setError(`Error al marcar como importante: ${err.message}`);
-      setTimeout(() => setError(''), 3000);
+    } catch (error) {
+      console.error('Error:', error);
     }
-  }, [user.email]);
+  };
 
-  const generatePDF = useCallback((type) => {
-    try {
-      generateInventoryPDF(type, inventory, providers);
-    } catch (err) {
-      console.error('Error generando PDF:', err);
-      setError('Error al generar el PDF. Por favor, intenta de nuevo.');
-      setTimeout(() => setError(''), 3000);
-    }
-  }, [inventory, providers]);
+  const generatePDF = (type) => {
+    generateInventoryPDF(type, inventory, providers);
+  };
 
-  const getStockBadge = useCallback((item) => {
+  const getStockBadge = (item) => {
     if (item.stock === 0) return <Badge bg="danger">Sin Stock</Badge>;
-    if (checkStockLevel(item, 'low')) return <Badge bg="warning" text="dark">Stock Bajo</Badge>;
+    if (item.stock <= (item.umbral_low || 5)) return <Badge bg="warning" text="dark">Stock Bajo</Badge>;
     return <Badge bg="success">OK</Badge>;
-  }, [checkStockLevel]);
+  };
+
+  const getStockColor = (item) => {
+    if (item.stock === 0) return '#dc3545';
+    if (item.stock <= (item.umbral_low || 5)) return '#ffc107';
+    return '#28a745';
+  };
 
   return (
     <>
@@ -240,63 +231,83 @@ function InventoryList({ inventory, user, userRole, providers }) {
                   <InputGroup>
                     <InputGroup.Text><FaSearch /></InputGroup.Text>
                     <Form.Control
-                      placeholder="Buscar producto..."
+                      placeholder="Buscar producto, código, SKU..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </InputGroup>
                 </Col>
-                <Col md={3} className="mb-3 mb-md-0">
-                  <Form.Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+
+                <Col md={8} className="text-md-end">
+                  {/* Botón de Escáner - NUEVO */}
+                  <Button 
+                    variant="success" 
+                    onClick={() => setShowBarcodeScanner(true)}
+                    className="me-2"
+                  >
+                    <FaBarcode className="me-2" />
+                    Escanear
+                  </Button>
+
+                  <Button variant="primary" onClick={handleAddItem} className="me-2">
+                    <FaPlus className="me-2" />
+                    Agregar Producto
+                  </Button>
+
+                  <Dropdown as={ButtonGroup}>
+                    <Dropdown.Toggle variant="secondary" id="dropdown-pdf">
+                      <FaFilePdf className="me-2" />
+                      Reportes PDF
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu>
+                      <Dropdown.Item onClick={() => generatePDF('complete')}>
+                        Inventario Completo
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => generatePDF('low-stock')}>
+                        Stock Bajo
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => generatePDF('out-of-stock')}>
+                        Sin Stock
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => generatePDF('critical')}>
+                        Stock Crítico
+                      </Dropdown.Item>
+                      <Dropdown.Divider />
+                      <Dropdown.Item onClick={() => generatePDF('by-category')}>
+                        Por Categoría
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => generatePDF('by-provider')}>
+                        Por Proveedor
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => generatePDF('valuation')}>
+                        Valoración
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </Col>
+              </Row>
+
+              <Row className="mt-3">
+                <Col md={6}>
+                  <Form.Select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                  >
                     {categories.map(cat => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
                     ))}
                   </Form.Select>
                 </Col>
-                <Col md={2} className="mb-3 mb-md-0">
-                  <Form.Select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)}>
-                    <option value="all">Todos</option>
-                    <option value="good">Stock OK</option>
+                <Col md={6}>
+                  <Form.Select
+                    value={stockFilter}
+                    onChange={(e) => setStockFilter(e.target.value)}
+                  >
+                    <option value="all">Todos los niveles de stock</option>
+                    <option value="good">Stock Normal</option>
                     <option value="low">Stock Bajo</option>
                     <option value="out">Sin Stock</option>
                   </Form.Select>
-                </Col>
-                <Col md={3} className="d-flex gap-2">
-                  <Button variant="primary" onClick={handleAddItem} className="flex-grow-1">
-                    <FaPlus /> Agregar
-                  </Button>
-                  <Dropdown as={ButtonGroup} drop="up" className="pdf-dropdown">
-                    <Button variant="secondary">
-                      <FaFilePdf /> PDF
-                    </Button>
-                    <Dropdown.Toggle split variant="secondary" />
-                    <Dropdown.Menu style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                      <Dropdown.Header>Reportes Generales</Dropdown.Header>
-                      <Dropdown.Item onClick={() => generatePDF('complete')}>
-                        📋 Inventario Completo
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => generatePDF('low-stock')}>
-                        ⚠️ Stock Bajo
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => generatePDF('out-of-stock')}>
-                        ❌ Sin Stock
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => generatePDF('critical')}>
-                        🚨 Stock Crítico
-                      </Dropdown.Item>
-                      <Dropdown.Divider />
-                      <Dropdown.Header>Reportes Especiales</Dropdown.Header>
-                      <Dropdown.Item onClick={() => generatePDF('by-category')}>
-                        📊 Por Categorías
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => generatePDF('by-provider')}>
-                        🏢 Reposición por Proveedor
-                      </Dropdown.Item>
-                      <Dropdown.Item onClick={() => generatePDF('valuation')}>
-                        💰 Valoración Financiera
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  </Dropdown>
                 </Col>
               </Row>
             </Card.Body>
@@ -305,87 +316,130 @@ function InventoryList({ inventory, user, userRole, providers }) {
           {/* Tabla de inventario */}
           <Card>
             <Card.Body className="p-0">
-              <div className="table-responsive">
-                <Table hover className="mb-0">
-                  <thead className="table-light">
+              <Table hover responsive>
+                <thead className="table-light">
+                  <tr>
+                    <th style={{ width: '40px' }}></th>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th className="text-center">Stock</th>
+                    <th>Proveedor</th>
+                    <th className="text-center">Estado</th>
+                    <th className="text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInventory.length === 0 ? (
                     <tr>
-                      <th style={{ width: '40px' }}></th>
-                      <th>Producto</th>
-                      <th>Categoría</th>
-                      <th className="text-center">Stock</th>
-                      <th className="text-center">Estado</th>
-                      <th className="text-end">Precio</th>
-                      <th className="text-center">Acciones</th>
+                      <td colSpan="7" className="text-center text-muted py-4">
+                        {searchTerm || categoryFilter !== 'all' || stockFilter !== 'all' 
+                          ? 'No se encontraron productos con los filtros aplicados'
+                          : 'No hay productos en el inventario'}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredInventory.length === 0 ? (
-                      <tr>
-                        <td colSpan="7" className="text-center py-5 text-muted">
-                          No hay productos que mostrar
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredInventory.map(item => (
-                        <tr key={item.id} style={{ backgroundColor: item.importante ? '#fff3cd' : 'transparent' }}>
+                  ) : (
+                    filteredInventory.map(item => {
+                      const provider = providers.find(p => p.id === item.proveedor_id);
+                      return (
+                        <tr key={item.id}>
                           <td className="text-center">
                             <Button
                               variant="link"
                               size="sm"
-                              className="p-0"
                               onClick={() => handleToggleImportante(item)}
-                              title={item.importante ? 'Desmarcar como importante' : 'Marcar como importante'}
+                              className="p-0"
                             >
-                              {item.importante ? <FaStar style={{ color: '#ffc107' }} /> : <FaRegStar style={{ color: '#6c757d' }} />}
+                              {item.importante ? 
+                                <FaStar className="text-warning" /> : 
+                                <FaRegStar className="text-muted" />
+                              }
                             </Button>
                           </td>
                           <td>
-                            <strong>{item.nombre}</strong>
-                            {item.marca && <div className="text-muted small">{item.marca}</div>}
+                            <div>
+                              <strong>{item.marca ? `${item.marca} - ` : ''}{item.nombre}</strong>
+                              {item.codigo_barras && (
+                                <div className="text-muted small">
+                                  <FaBarcode className="me-1" />
+                                  {item.codigo_barras}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <Badge bg="info">
+                              {categories.find(c => c.value === item.tipo)?.label || item.tipo}
+                            </Badge>
                           </td>
                           <td className="text-center">
-                            <Badge bg="secondary">{item.tipo}</Badge>
+                            <Form.Control
+                              type="number"
+                              step="0.01"
+                              value={item.stock}
+                              onChange={(e) => handleQuickStockUpdate(item, e.target.value)}
+                              style={{
+                                width: '80px',
+                                display: 'inline-block',
+                                borderColor: getStockColor(item),
+                                fontWeight: 'bold'
+                              }}
+                            />
                           </td>
-                          <td className="text-center">
-                            <strong>{item.stock || 0}</strong> {item.unidad_medida}
+                          <td>
+                            <small className="text-muted">
+                              {provider?.empresa || 'Sin proveedor'}
+                            </small>
                           </td>
                           <td className="text-center">
                             {getStockBadge(item)}
                           </td>
                           <td className="text-end">
-                            ${(item.precio_venta || 0).toFixed(2)}
-                          </td>
-                          <td className="text-center">
-                            <ButtonGroup size="sm">
-                              <Button variant="outline-primary" onClick={() => handleEditItem(item)} title="Editar">
-                                <FaEdit />
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() => handleEditItem(item)}
+                              className="me-1"
+                            >
+                              <FaEdit />
+                            </Button>
+                            {userRole === 'admin' && (
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                onClick={() => handleDeleteItem(item)}
+                              >
+                                <FaTrash />
                               </Button>
-                              {(userRole === 'admin' || userRole === 'manager') && (
-                                <Button variant="outline-danger" onClick={() => handleDeleteItem(item)} title="Eliminar">
-                                  <FaTrash />
-                                </Button>
-                              )}
-                            </ButtonGroup>
+                            )}
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </Table>
-              </div>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
             </Card.Body>
           </Card>
-
-          <ProductModal
-            show={showModal}
-            onHide={() => setShowModal(false)}
-            editingItem={editingItem}
-            user={user}
-            providers={providers}
-            categories={categories}
-          />
         </>
       )}
+
+      {/* Modal de Producto */}
+      <ProductModal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        editingItem={editingItem}
+        user={user}
+        providers={providers}
+        categories={categories}
+      />
+
+      {/* Modal de Escáner de Código de Barras - NUEVO */}
+      <BarcodeScanner
+        show={showBarcodeScanner}
+        onHide={() => setShowBarcodeScanner(false)}
+        onBarcodeDetected={handleBarcodeDetected}
+        inventory={inventory}
+      />
     </>
   );
 }

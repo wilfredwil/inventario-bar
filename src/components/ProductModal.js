@@ -18,7 +18,10 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
     umbral_low: 5,
     proveedor_id: '',
     notas: '',
-    importante: false
+    importante: false,
+    codigo_barras: '', // NUEVO CAMPO
+    sku: '', // NUEVO CAMPO
+    upc: '' // NUEVO CAMPO
   });
 
   useEffect(() => {
@@ -34,7 +37,10 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
         umbral_low: editingItem.umbral_low || 5,
         proveedor_id: editingItem.proveedor_id || '',
         notas: editingItem.notas || '',
-        importante: editingItem.importante || false
+        importante: editingItem.importante || false,
+        codigo_barras: editingItem.codigo_barras || '',
+        sku: editingItem.sku || '',
+        upc: editingItem.upc || ''
       });
     } else {
       setFormData({
@@ -48,7 +54,10 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
         umbral_low: 5,
         proveedor_id: '',
         notas: '',
-        importante: false
+        importante: false,
+        codigo_barras: '',
+        sku: '',
+        upc: ''
       });
     }
     setError('');
@@ -145,6 +154,52 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
             </Col>
           </Row>
 
+          {/* NUEVA SECCIÓN: Códigos de Identificación */}
+          <Row>
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Código de Barras</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.codigo_barras}
+                  onChange={(e) => setFormData({...formData, codigo_barras: e.target.value})}
+                  placeholder="Ej: 7501234567890"
+                />
+                <Form.Text className="text-muted">
+                  Para búsqueda rápida por escáner
+                </Form.Text>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>SKU</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({...formData, sku: e.target.value})}
+                  placeholder="Ej: ALP-001"
+                />
+                <Form.Text className="text-muted">
+                  Código interno del producto
+                </Form.Text>
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>UPC</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.upc}
+                  onChange={(e) => setFormData({...formData, upc: e.target.value})}
+                  placeholder="Ej: 012345678905"
+                />
+                <Form.Text className="text-muted">
+                  Código UPC universal
+                </Form.Text>
+              </Form.Group>
+            </Col>
+          </Row>
+
           <Row>
             <Col md={4}>
               <Form.Group className="mb-3">
@@ -174,20 +229,12 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
             </Col>
             <Col md={4}>
               <Form.Group className="mb-3">
-                <Form.Label>Unidad de Medida *</Form.Label>
-                <Form.Select
-                  value={formData.unidad_medida}
-                  onChange={(e) => setFormData({...formData, unidad_medida: e.target.value})}
-                  required
-                >
-                  <option value="botella">Botella</option>
-                  <option value="litro">Litro</option>
-                  <option value="ml">Mililitro</option>
-                  <option value="unidad">Unidad</option>
-                  <option value="caja">Caja</option>
-                  <option value="kg">Kilogramo</option>
-                  <option value="gr">Gramo</option>
-                </Form.Select>
+                <Form.Label>Umbral Mínimo</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={formData.umbral_low}
+                  onChange={(e) => setFormData({...formData, umbral_low: e.target.value})}
+                />
               </Form.Group>
             </Col>
           </Row>
@@ -195,25 +242,27 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
           <Row>
             <Col md={4}>
               <Form.Group className="mb-3">
-                <Form.Label>Stock Mínimo *</Form.Label>
-                <Form.Control
-                  type="number"
-                  value={formData.umbral_low}
-                  onChange={(e) => setFormData({...formData, umbral_low: e.target.value})}
-                  required
-                />
+                <Form.Label>Unidad de Medida</Form.Label>
+                <Form.Select
+                  value={formData.unidad_medida}
+                  onChange={(e) => setFormData({...formData, unidad_medida: e.target.value})}
+                >
+                  <option value="botella">Botella</option>
+                  <option value="litro">Litro</option>
+                  <option value="caja">Caja</option>
+                  <option value="unidad">Unidad</option>
+                </Form.Select>
               </Form.Group>
             </Col>
             <Col md={4}>
               <Form.Group className="mb-3">
-                <Form.Label>Precio de Venta *</Form.Label>
+                <Form.Label>Precio de Venta</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   value={formData.precio_venta}
                   onChange={(e) => setFormData({...formData, precio_venta: e.target.value})}
                   placeholder="0.00"
-                  required
                 />
               </Form.Group>
             </Col>
