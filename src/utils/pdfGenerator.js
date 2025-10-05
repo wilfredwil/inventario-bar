@@ -152,9 +152,31 @@ const generateStandardPDF = (doc, items, title, subtitle) => {
     },
     alternateRowStyles: { fillColor: [245, 247, 250] },
     didDrawCell: (data) => {
-      if (data.column.index === 6 && data.cell.raw === '⭐') {
-        doc.setFillColor(255, 243, 205);
+      // Resaltar productos importantes con fondo amarillo
+      if (data.section === 'body' && items[data.row.index]?.importante) {
+        doc.setFillColor(255, 243, 205); // Color amarillo suave
         doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+        
+        // Re-dibujar el texto encima
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(8);
+        const text = data.cell.text[0];
+        if (text) {
+          if (data.column.index === 2 || data.column.index === 6) { // Center
+            doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+          } else if (data.column.index === 4 || data.column.index === 5) { // Right
+            doc.text(text, data.cell.x + data.cell.width - 3, data.cell.y + data.cell.height / 2 + 2, { align: 'right' });
+          } else { // Left
+            doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+          }
+        }
+      }
+      
+      // Icono de estrella para la columna "Importante"
+      if (data.column.index === 6 && data.cell.raw === '⭐') {
+        doc.setTextColor(245, 158, 11); // Color dorado para la estrella
+        doc.setFontSize(10);
+        doc.text('⭐', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 3, { align: 'center' });
       }
     }
   });
@@ -242,13 +264,14 @@ const generateCategoryPDF = (doc, items, title, subtitle) => {
       item.nombre || '',
       (item.stock || 0).toString(),
       item.unidad_medida || '',
-      `$${(item.precio_venta || 0).toFixed(2)}`,
-      `$${((item.precio_venta || 0) * (item.stock || 0)).toFixed(2)}`
+      `${(item.precio_venta || 0).toFixed(2)}`,
+      `${((item.precio_venta || 0) * (item.stock || 0)).toFixed(2)}`,
+      item.importante ? '⭐' : ''
     ]);
 
     autoTable(doc, {
       startY: currentY,
-      head: [['Producto', 'Stock', 'Unidad', 'Precio', 'Valor Total']],
+      head: [['Producto', 'Stock', 'Unidad', 'Precio', 'Valor Total', 'Imp.']],
       body: tableData,
       theme: 'grid',
       headStyles: { 
@@ -264,9 +287,36 @@ const generateCategoryPDF = (doc, items, title, subtitle) => {
         1: { halign: 'center' },
         2: { halign: 'center' },
         3: { halign: 'right' },
-        4: { halign: 'right' }
+        4: { halign: 'right' },
+        5: { halign: 'center' }
       },
-      margin: { left: 14, right: 14 }
+      margin: { left: 14, right: 14 },
+      didDrawCell: (data) => {
+        // Resaltar productos importantes
+        if (data.section === 'body' && categoryItems[data.row.index]?.importante) {
+          doc.setFillColor(255, 243, 205);
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+          
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(8);
+          const text = data.cell.text[0];
+          if (text) {
+            if (data.column.index === 1 || data.column.index === 2 || data.column.index === 5) {
+              doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            } else if (data.column.index === 3 || data.column.index === 4) {
+              doc.text(text, data.cell.x + data.cell.width - 3, data.cell.y + data.cell.height / 2 + 2, { align: 'right' });
+            } else {
+              doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+            }
+          }
+        }
+        
+        if (data.column.index === 5 && data.cell.raw === '⭐') {
+          doc.setTextColor(245, 158, 11);
+          doc.setFontSize(10);
+          doc.text('⭐', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+        }
+      }
     });
 
     currentY = doc.lastAutoTable.finalY + 10;
@@ -382,7 +432,29 @@ const generateProviderPDF = (doc, items, providers, title, subtitle) => {
         3: { halign: 'center' },
         4: { halign: 'center' }
       },
-      margin: { left: 14, right: 14 }
+      margin: { left: 14, right: 14 },
+      didDrawCell: (data) => {
+        // Resaltar productos importantes
+        if (data.section === 'body' && providerItems[data.row.index]?.importante) {
+          doc.setFillColor(255, 243, 205);
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+          
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(8);
+          const text = data.cell.text[0];
+          if (text) {
+            if (data.column.index === 1 || data.column.index === 2 || data.column.index === 3 || data.column.index === 4) {
+              doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            } else {
+              doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
+            }
+          }
+        }
+        
+        if (data.column.index === 4 && data.cell.raw === '⭐ Sí') {
+          doc.setTextColor(245, 158, 11);
+        }
+      }
     });
 
     currentY = doc.lastAutoTable.finalY + 12;
