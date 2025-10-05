@@ -17,7 +17,7 @@ function InventoryList({ inventory, user, userRole, providers }) {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [focusMode, setFocusMode] = useState(false); // Toggle modo rápido
+  const [focusMode, setFocusMode] = useState(false);
 
   const categories = [
     { value: 'all', label: 'Todas las categorías' },
@@ -43,7 +43,8 @@ function InventoryList({ inventory, user, userRole, providers }) {
 
   // Filtrar inventario
   const filteredInventory = inventory.filter(item => {
-    const matchesSearch = item.nombre?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.marca?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || item.tipo === categoryFilter;
     const matchesStock = 
       stockFilter === 'all' ? true :
@@ -170,36 +171,8 @@ function InventoryList({ inventory, user, userRole, providers }) {
       {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
-      {/* Toggle Modo Focus SOLO en móvil */}
-      {isMobile && (
-        <div className="d-flex justify-content-between align-items-center mb-3 p-2" style={{
-          background: '#ffffff',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-        }}>
-          <div>
-            <h5 className="mb-0" style={{ fontSize: '1.125rem', fontWeight: 700 }}>Inventario</h5>
-            <small className="text-muted">{stats.total} productos</small>
-          </div>
-          <Button
-            variant={focusMode ? "primary" : "outline-primary"}
-            size="sm"
-            onClick={() => setFocusMode(!focusMode)}
-            style={{ 
-              fontWeight: 600,
-              padding: '0.625rem 1rem',
-              borderRadius: '8px',
-              fontSize: '0.875rem',
-              minHeight: '44px'
-            }}
-          >
-            {focusMode ? '⚡ Modo Rápido' : '📊 Ver Todo'}
-          </Button>
-        </div>
-      )}
-
-      {/* Mostrar vista según modo */}
-      {isMobile && focusMode ? (
+      {/* Vista móvil optimizada */}
+      {isMobile ? (
         <QuickStockMobile inventory={inventory} user={user} />
       ) : (
         <>
@@ -349,7 +322,11 @@ function InventoryList({ inventory, user, userRole, providers }) {
                             </Button>
                           </td>
                           <td>
-                            <strong>{item.nombre}</strong>
+                            <div>
+                              {item.marca && <span style={{ color: '#6366f1', fontWeight: 600 }}>{item.marca}</span>}
+                              {item.marca && <span style={{ margin: '0 0.5rem', color: '#cbd5e1' }}>•</span>}
+                              <strong>{item.nombre}</strong>
+                            </div>
                           </td>
                           <td>
                             <Badge bg="secondary">{item.tipo}</Badge>

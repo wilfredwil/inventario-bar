@@ -8,6 +8,7 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
+    marca: '',
     nombre: '',
     tipo: 'licor',
     stock: 0,
@@ -23,6 +24,7 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
   useEffect(() => {
     if (editingItem) {
       setFormData({
+        marca: editingItem.marca || '',
         nombre: editingItem.nombre || '',
         tipo: editingItem.tipo || 'licor',
         stock: editingItem.stock || 0,
@@ -36,6 +38,7 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
       });
     } else {
       setFormData({
+        marca: '',
         nombre: '',
         tipo: 'licor',
         stock: 0,
@@ -117,6 +120,17 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
         
         <Form onSubmit={handleSubmit}>
           <Row>
+            <Col md={4}>
+              <Form.Group className="mb-3">
+                <Form.Label>Marca</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.marca}
+                  onChange={(e) => setFormData({...formData, marca: e.target.value})}
+                  placeholder="Ej: Alpasion"
+                />
+              </Form.Group>
+            </Col>
             <Col md={8}>
               <Form.Group className="mb-3">
                 <Form.Label>Nombre del Producto *</Form.Label>
@@ -124,11 +138,14 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
                   type="text"
                   value={formData.nombre}
                   onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                  placeholder="Ej: Whisky Jack Daniel's"
+                  placeholder="Ej: Private selection Chacayas"
                   required
                 />
               </Form.Group>
             </Col>
+          </Row>
+
+          <Row>
             <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label>Categoría *</Form.Label>
@@ -143,9 +160,6 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
                 </Form.Select>
               </Form.Group>
             </Col>
-          </Row>
-
-          <Row>
             <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label>Stock Actual *</Form.Label>
@@ -176,6 +190,9 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
                 </Form.Select>
               </Form.Group>
             </Col>
+          </Row>
+
+          <Row>
             <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label>Stock Mínimo *</Form.Label>
@@ -187,10 +204,7 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
                 />
               </Form.Group>
             </Col>
-          </Row>
-
-          <Row>
-            <Col md={6}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label>Precio de Venta *</Form.Label>
                 <Form.Control
@@ -203,7 +217,7 @@ function ProductModal({ show, onHide, editingItem, user, providers, categories }
                 />
               </Form.Group>
             </Col>
-            <Col md={6}>
+            <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label>Precio de Compra</Form.Label>
                 <Form.Control
