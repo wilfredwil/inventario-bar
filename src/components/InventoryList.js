@@ -1,7 +1,7 @@
 // src/components/InventoryList.js
 import React, { useState } from 'react';
 import { Row, Col, Card, Table, Button, Form, Badge, InputGroup, Alert, Dropdown, ButtonGroup } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaStar, FaRegStar, FaSearch, FaFilePdf, FaBarcode } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaStar, FaRegStar, FaSearch, FaFilePdf, FaBarcode, FaMobileAlt } from 'react-icons/fa';
 import { updateDoc, deleteDoc, doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import ProductModal from './ProductModal';
@@ -20,13 +20,14 @@ function InventoryList({ inventory, user, userRole, providers }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [focusMode, setFocusMode] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [forceDesktopView, setForceDesktopView] = useState(false);
 
   const categories = [
     { value: 'all', label: 'Todas las categorías' },
     { value: 'licor', label: 'Licores' },
     { value: 'vino', label: 'Vinos' },
     { value: 'cerveza', label: 'Cervezas' },
-    { value: 'whiskey', label: 'Whiskeys' },
+    { value: 'whisky', label: 'Whiskys' },
     { value: 'vodka', label: 'Vodkas' },
     { value: 'gin', label: 'Gins' },
     { value: 'ron', label: 'Rones' },
@@ -83,6 +84,10 @@ function InventoryList({ inventory, user, userRole, providers }) {
     handleEditItem(product);
     setSuccess(`Producto encontrado: ${product.nombre}`);
     setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const toggleView = () => {
+    setForceDesktopView(!forceDesktopView);
   };
 
   const handleDeleteItem = async (item) => {
@@ -183,8 +188,12 @@ function InventoryList({ inventory, user, userRole, providers }) {
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
 
       {/* Vista móvil optimizada */}
-      {isMobile ? (
-        <QuickStockMobile inventory={inventory} user={user} />
+      {(isMobile && !forceDesktopView) ? (
+        <QuickStockMobile 
+          inventory={inventory} 
+          user={user} 
+          onToggleView={toggleView}
+        />
       ) : (
         <>
           {/* Estadísticas rápidas */}
@@ -239,6 +248,18 @@ function InventoryList({ inventory, user, userRole, providers }) {
                 </Col>
 
                 <Col md={8} className="text-md-end">
+                  {/* Botón volver a vista móvil (solo visible cuando está forzado en desktop) */}
+                  {isMobile && forceDesktopView && (
+                    <Button 
+                      variant="outline-secondary" 
+                      onClick={toggleView}
+                      className="me-2"
+                    >
+                      <FaMobileAlt className="me-2" />
+                      Vista Móvil
+                    </Button>
+                  )}
+
                   {/* Botón de Escáner - NUEVO */}
                   <Button 
                     variant="success" 
