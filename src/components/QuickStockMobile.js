@@ -433,7 +433,7 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
                 textAlign: 'center'
               }}>
                 <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.25rem' }}>
-                  {selected Product.marca ? `${selectedProduct.marca} - ${selectedProduct.nombre}` : selectedProduct.nombre}
+                  {selectedProduct.marca ? `${selectedProduct.marca} - ${selectedProduct.nombre}` : selectedProduct.nombre}
                 </div>
                 <Badge bg="secondary" className="me-2">{selectedProduct.tipo}</Badge>
                 {selectedProduct.importante && (

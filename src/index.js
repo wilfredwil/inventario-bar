@@ -15,7 +15,9 @@ console.error = (...args) => {
     'video surface onabort() called',
     'Cannot set properties of null',
     'Failed to execute \'removeChild\'',
-    'parameter 1 is not of type \'Node\''
+    'parameter 1 is not of type \'Node\'',
+    'interrupted because the media was removed',
+    'setting \'innerText\''
   ];
   
   // Si el error contiene alguno de estos textos, no mostrarlo
@@ -35,7 +37,11 @@ window.addEventListener('unhandledrejection', (event) => {
   const errorsToSuppress = [
     'AbortError',
     'The play() request was interrupted',
-    'interrupted because the media was removed'
+    'interrupted because the media was removed',
+    'Failed to execute \'removeChild\'',
+    'parameter 1 is not of type \'Node\'',
+    'Cannot set properties of null',
+    'setting \'innerText\''
   ];
   
   // Si el error contiene alguno de estos textos, prevenirlo

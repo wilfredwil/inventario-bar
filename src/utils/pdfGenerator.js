@@ -120,68 +120,78 @@ const generateStandardPDF = (doc, items, title, subtitle) => {
   }
   currentY += 5;
 
-  // Tabla de productos
+  // Tabla de productos CON MARCA
   const tableData = items.map(item => [
     item.nombre || '',
+    item.marca || '-',
     item.tipo || '',
     (item.stock || 0).toString(),
     item.unidad_medida || '',
-    `$${(item.precio_venta || 0).toFixed(2)}`,
-    `$${((item.precio_venta || 0) * (item.stock || 0)).toFixed(2)}`,
-    item.importante ? '⭐' : ''
+    `${(item.precio_venta || 0).toFixed(2)}`,
+    `${((item.precio_venta || 0) * (item.stock || 0)).toFixed(2)}`,
+    item.importante ? 'Sí' : 'No'
   ]);
 
   autoTable(doc, {
     startY: currentY,
-    head: [['Producto', 'Categoría', 'Stock', 'Unidad', 'Precio', 'Valor Total', 'Imp.']],
+    head: [['Producto', 'Marca', 'Categoría', 'Stock', 'Unidad', 'Precio', 'Valor Total', 'Imp.']],
     body: tableData,
-    theme: 'grid',
+    theme: 'striped',
     headStyles: { 
       fillColor: [102, 126, 234],
       textColor: 255,
-      fontSize: 9
+      fontSize: 9,
+      fontStyle: 'bold'
     },
     styles: { 
       fontSize: 8,
-      cellPadding: 2
+      cellPadding: 3
     },
     columnStyles: {
-      1: { halign: 'center' },
-      2: { halign: 'center' },
-      3: { halign: 'center' },
-      4: { halign: 'right' },
-      5: { halign: 'right' },
-      6: { halign: 'center' }
+      0: { cellWidth: 40 },
+      1: { cellWidth: 28 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 15, halign: 'center' },
+      4: { cellWidth: 18, halign: 'center' },
+      5: { cellWidth: 20, halign: 'right' },
+      6: { cellWidth: 25, halign: 'right' },
+      7: { cellWidth: 10, halign: 'center' }
     },
     margin: { left: 14, right: 14 },
-    didDrawCell: (data) => {
+    willDrawCell: (data) => {
+      // Aplicar fondo amarillo ANTES de que se dibuje la celda
       if (data.section === 'body') {
         const item = items[data.row.index];
-        
-        // Resaltar productos importantes
         if (item?.importante) {
-          doc.setFillColor(255, 243, 205);
-          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-          
-          doc.setTextColor(0, 0, 0);
-          doc.setFontSize(8);
-          const text = data.cell.text[0];
-          if (text) {
-            if (data.column.index === 1 || data.column.index === 2 || data.column.index === 6) {
-              doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-            } else if (data.column.index === 4 || data.column.index === 5) {
-              doc.text(text, data.cell.x + data.cell.width - 3, data.cell.y + data.cell.height / 2 + 2, { align: 'right' });
-            } else {
-              doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
-            }
-          }
+          data.cell.styles.fillColor = [255, 250, 205];
         }
         
-        // Icono de estrella para la columna "Importante"
-        if (data.column.index === 6 && data.cell.raw === '⭐') {
+        // Colorear el stock según el estado
+        if (data.column.index === 3) {
+          const stock = parseInt(data.cell.raw);
+          const umbral = item?.umbral_low || 5;
+          
+          if (stock === 0) {
+            data.cell.styles.textColor = [220, 53, 69];
+            data.cell.styles.fontStyle = 'bold';
+          } else if (stock <= umbral) {
+            data.cell.styles.textColor = [255, 193, 7];
+            data.cell.styles.fontStyle = 'bold';
+          } else {
+            data.cell.styles.textColor = [40, 167, 69];
+          }
+        }
+      }
+    },
+    didDrawCell: (data) => {
+      // Solo cambiar el color del texto "Sí" en la columna Importante
+      if (data.section === 'body' && data.column.index === 7) {
+        const item = items[data.row.index];
+        if (item?.importante && data.cell.text[0] === 'Sí') {
           doc.setTextColor(245, 158, 11);
-          doc.setFontSize(10);
-          doc.text('⭐', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 3, { align: 'center' });
+          doc.setFont(undefined, 'bold');
+          doc.text('Sí', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+          doc.setFont(undefined, 'normal');
         }
       }
     }
@@ -265,71 +275,62 @@ const generateCategoryPDF = (doc, items, title, subtitle) => {
     );
     currentY += 15;
 
-    // Tabla de productos
+    // Tabla de productos CON MARCA
     const tableData = categoryItems.map(item => [
       item.nombre || '',
+      item.marca || '-',
       (item.stock || 0).toString(),
       item.unidad_medida || '',
       `${(item.precio_venta || 0).toFixed(2)}`,
       `${((item.precio_venta || 0) * (item.stock || 0)).toFixed(2)}`,
-      item.importante ? '⭐' : ''
+      item.importante ? 'Sí' : 'No'
     ]);
 
     autoTable(doc, {
       startY: currentY,
-      head: [['Producto', 'Stock', 'Unidad', 'Precio', 'Valor Total', 'Imp.']],
+      head: [['Producto', 'Marca', 'Stock', 'Unidad', 'Precio', 'Valor Total', 'Imp.']],
       body: tableData,
-      theme: 'grid',
+      theme: 'striped',
       headStyles: { 
         fillColor: [102, 126, 234],
         textColor: 255,
         fontSize: 9
       },
-      styles: { 
-        fontSize: 8,
-        cellPadding: 2
-      },
+      styles: { fontSize: 8 },
       columnStyles: {
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'right' },
+        0: { cellWidth: 50 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 18, halign: 'center' },
+        3: { cellWidth: 18, halign: 'center' },
         4: { halign: 'right' },
-        5: { halign: 'center' }
+        5: { halign: 'right' },
+        6: { cellWidth: 12, halign: 'center' }
       },
       margin: { left: 14, right: 14 },
-      didDrawCell: (data) => {
+      willDrawCell: (data) => {
+        // Aplicar fondo amarillo ANTES de que se dibuje la celda
         if (data.section === 'body') {
           const item = categoryItems[data.row.index];
-          
-          // Resaltar productos importantes
           if (item?.importante) {
-            doc.setFillColor(255, 243, 205);
-            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-            
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(8);
-            const text = data.cell.text[0];
-            if (text) {
-              if (data.column.index === 1 || data.column.index === 2 || data.column.index === 5) {
-                doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-              } else if (data.column.index === 3 || data.column.index === 4) {
-                doc.text(text, data.cell.x + data.cell.width - 3, data.cell.y + data.cell.height / 2 + 2, { align: 'right' });
-              } else {
-                doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
-              }
-            }
+            data.cell.styles.fillColor = [255, 250, 205];
           }
-          
-          if (data.column.index === 5 && data.cell.raw === '⭐') {
+        }
+      },
+      didDrawCell: (data) => {
+        // Solo cambiar el color del texto "Sí" en la columna Importante
+        if (data.section === 'body' && data.column.index === 6) {
+          const item = categoryItems[data.row.index];
+          if (item?.importante && data.cell.text[0] === 'Sí') {
             doc.setTextColor(245, 158, 11);
-            doc.setFontSize(10);
-            doc.text('⭐', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            doc.setFont(undefined, 'bold');
+            doc.text('Sí', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            doc.setFont(undefined, 'normal');
           }
         }
       }
     });
 
-    currentY = doc.lastAutoTable.finalY + 10;
+    currentY = doc.lastAutoTable.finalY + 12;
   });
 
   // Pie de página
@@ -413,59 +414,54 @@ const generateProviderPDF = (doc, items, providers, title, subtitle) => {
       }
     }
 
-    // Tabla de productos
+    // Tabla de productos CON MARCA
     const tableData = providerItems.map(item => [
       item.nombre || '',
+      item.marca || '-',
       item.tipo || '',
       (item.stock || 0).toString(),
       (item.umbral_low || 5).toString(),
-      item.importante ? '⭐ Sí' : 'No'
+      item.importante ? 'Sí' : 'No'
     ]);
 
     autoTable(doc, {
       startY: currentY,
-      head: [['Producto', 'Categoría', 'Stock Actual', 'Stock Mínimo', 'Importante']],
+      head: [['Producto', 'Marca', 'Categoría', 'Stock Actual', 'Stock Mínimo', 'Imp.']],
       body: tableData,
-      theme: 'grid',
+      theme: 'striped',
       headStyles: { 
         fillColor: [220, 53, 69],
         textColor: 255,
         fontSize: 9
       },
-      styles: { 
-        fontSize: 8,
-        cellPadding: 2
-      },
+      styles: { fontSize: 8 },
       columnStyles: {
-        1: { halign: 'center' },
-        2: { halign: 'center' },
-        3: { halign: 'center' },
-        4: { halign: 'center' }
+        0: { cellWidth: 50 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 20, halign: 'center' },
+        5: { cellWidth: 12, halign: 'center' }
       },
-      margin: { left: 14, right: 14 },
-      didDrawCell: (data) => {
+      willDrawCell: (data) => {
+        // Aplicar fondo amarillo ANTES de que se dibuje la celda
         if (data.section === 'body') {
           const item = providerItems[data.row.index];
-          
-          // Resaltar productos importantes
           if (item?.importante) {
-            doc.setFillColor(255, 243, 205);
-            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-            
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(8);
-            const text = data.cell.text[0];
-            if (text) {
-              if (data.column.index === 1 || data.column.index === 2 || data.column.index === 3 || data.column.index === 4) {
-                doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-              } else {
-                doc.text(text, data.cell.x + 3, data.cell.y + data.cell.height / 2 + 2);
-              }
-            }
+            data.cell.styles.fillColor = [255, 250, 205];
           }
-          
-          if (data.column.index === 4 && data.cell.raw === '⭐ Sí') {
+        }
+      },
+      didDrawCell: (data) => {
+        // Solo cambiar el color del texto "Sí" en la columna Importante
+        if (data.section === 'body' && data.column.index === 5) {
+          const item = providerItems[data.row.index];
+          if (item?.importante && data.cell.text[0] === 'Sí') {
+            // Redibujar solo el "Sí" en naranja
             doc.setTextColor(245, 158, 11);
+            doc.setFont(undefined, 'bold');
+            doc.text('Sí', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            doc.setFont(undefined, 'normal');
           }
         }
       }
@@ -534,7 +530,7 @@ const generateValuationPDF = (doc, items, title, subtitle) => {
 
   currentY += 50;
 
-  // Top 10 productos
+  // Top 10 productos CON MARCA
   const topProducts = [...items]
     .sort((a, b) => ((b.precio_venta || 0) * (b.stock || 0)) - ((a.precio_venta || 0) * (a.stock || 0)))
     .slice(0, 10);
@@ -547,6 +543,7 @@ const generateValuationPDF = (doc, items, title, subtitle) => {
   const topTableData = topProducts.map((item, index) => [
     (index + 1).toString(),
     item.nombre || '',
+    item.marca || '-',
     (item.stock || 0).toString(),
     `$${(item.precio_venta || 0).toFixed(2)}`,
     `$${((item.precio_venta || 0) * (item.stock || 0)).toFixed(2)}`
@@ -554,7 +551,7 @@ const generateValuationPDF = (doc, items, title, subtitle) => {
 
   autoTable(doc, {
     startY: currentY,
-    head: [['#', 'Producto', 'Stock', 'Precio', 'Valor Total']],
+    head: [['#', 'Producto', 'Marca', 'Stock', 'Precio', 'Valor Total']],
     body: topTableData,
     theme: 'striped',
     headStyles: { 
@@ -564,10 +561,12 @@ const generateValuationPDF = (doc, items, title, subtitle) => {
     },
     styles: { fontSize: 8 },
     columnStyles: {
-      0: { cellWidth: 15, halign: 'center' },
-      2: { halign: 'center' },
-      3: { halign: 'right' },
-      4: { halign: 'right' }
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 55 },
+      2: { cellWidth: 35 },
+      3: { cellWidth: 18, halign: 'center' },
+      4: { cellWidth: 25, halign: 'right' },
+      5: { cellWidth: 30, halign: 'right' }
     }
   });
 

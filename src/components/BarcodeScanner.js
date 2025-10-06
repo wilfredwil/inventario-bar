@@ -26,14 +26,21 @@ function BarcodeScanner({ show, onHide, onBarcodeDetected, inventory }) {
   // Limpiar escáneres al cerrar
   useEffect(() => {
     return () => {
-      // Cleanup cuando el componente se desmonta - sin async para evitar race conditions
       setTimeout(() => {
         if (html5QrcodeRef.current && (isScanning || isCameraReady)) {
-          html5QrcodeRef.current.stop().catch(() => {});
+          try {
+            html5QrcodeRef.current.stop();
+          } catch (err) {
+            // Ignorar si ya está detenido
+          }
         }
         
         if (html5QrcodeScannerRef.current) {
-          html5QrcodeScannerRef.current.clear().catch(() => {});
+          try {
+            html5QrcodeScannerRef.current.clear();
+          } catch (err) {
+            // Ignorar si ya está limpiado
+          }
         }
       }, 0);
     };
@@ -256,16 +263,11 @@ function BarcodeScanner({ show, onHide, onBarcodeDetected, inventory }) {
         await html5QrcodeRef.current.stop();
       } catch (err) {
         // Ignorar - ya detenido
-      } finally {
-        setIsCameraReady(false);
-        setIsScanning(false);
-        setSuccess('');
       }
-    } else {
-      setIsCameraReady(false);
-      setIsScanning(false);
-      setSuccess('');
     }
+    setIsCameraReady(false);
+    setIsScanning(false);
+    setSuccess('');
   };
 
   const handleManualSubmit = (e) => {
