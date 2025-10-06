@@ -1,10 +1,11 @@
 // src/components/QuickStockMobile.js
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Form, Badge, Button, Modal, ListGroup, ButtonGroup, Alert, InputGroup } from 'react-bootstrap';
-import { FaSearch, FaTimes, FaStar, FaCheck, FaMinus, FaPlus, FaBarcode, FaTable, FaList } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaStar, FaCheck, FaMinus, FaPlus, FaBarcode, FaTable } from 'react-icons/fa';
 import { updateDoc, doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import BarcodeScanner from './BarcodeScanner';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 function QuickStockMobile({ inventory, user, onToggleView }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,6 +14,7 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
   const [newStock, setNewStock] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [showSimpleScanner, setShowSimpleScanner] = useState(false);
   const [recentProducts, setRecentProducts] = useState([]);
   const [frequentProducts, setFrequentProducts] = useState([]);
   const searchInputRef = useRef(null);
@@ -33,17 +35,18 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
     setFrequentProducts(frequentArray);
   }, []);
 
-  // Filtrar productos mientras escribes
+  // Filtrar productos mientras escribes - INCLUYE MARCA
   useEffect(() => {
     if (searchTerm.length >= 2) {
       const filtered = inventory
         .filter(item => 
           item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.marca?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           item.tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           item.codigo_barras?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           item.sku?.toLowerCase().includes(searchTerm.toLowerCase())
         )
-        .slice(0, 10); // Solo mostrar 10 resultados
+        .slice(0, 10);
       setFilteredProducts(filtered);
     } else {
       setFilteredProducts([]);
@@ -52,14 +55,12 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
 
   // Guardar en productos recientes y frecuentes
   const saveToHistory = (productId) => {
-    // Productos recientes
     let recent = JSON.parse(localStorage.getItem('recentProducts') || '[]');
-    recent = recent.filter(id => id !== productId); // Remover si ya existe
-    recent.unshift(productId); // Agregar al inicio
-    recent = recent.slice(0, 10); // Mantener solo 10
+    recent = recent.filter(id => id !== productId);
+    recent.unshift(productId);
+    recent = recent.slice(0, 10);
     localStorage.setItem('recentProducts', JSON.stringify(recent));
 
-    // Productos frecuentes (contador)
     let frequent = JSON.parse(localStorage.getItem('frequentProducts') || '{}');
     frequent[productId] = (frequent[productId] || 0) + 1;
     localStorage.setItem('frequentProducts', JSON.stringify(frequent));
@@ -78,7 +79,6 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
   };
 
   const handleBarcodeScannedForProduct = async (scannedCode) => {
-    // Agregar código de barras al producto seleccionado
     if (!selectedProduct) return;
 
     try {
@@ -97,14 +97,11 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
         tipo_inventario: 'bar'
       });
 
-      // Actualizar el producto en el estado local
       selectedProduct.codigo_barras = scannedCode;
       
-      // Cerrar escáner y volver al modal de stock
-      setShowBarcodeScanner(false);
+      setShowSimpleScanner(false);
       setShowModal(true);
 
-      // Vibración de feedback
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
@@ -145,7 +142,6 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
       setSelectedProduct(null);
       setNewStock('');
 
-      // Vibración de feedback (si está disponible)
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
@@ -170,7 +166,7 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
   const getProductsByIds = (ids) => {
     return ids
       .map(id => inventory.find(item => item.id === id))
-      .filter(item => item); // Filtrar nulls
+      .filter(item => item);
   };
 
   const recentProductsList = getProductsByIds(recentProducts);
@@ -187,7 +183,6 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
         <Card.Body className="p-2">
-          {/* Botones de acción superiores */}
           <div className="d-flex gap-2 mb-2">
             <Button 
               variant="success" 
@@ -235,7 +230,7 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
               <Form.Control
                 ref={searchInputRef}
                 type="text"
-                placeholder="Buscar producto, código..."
+                placeholder="Buscar producto, marca, código..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 autoComplete="off"
@@ -288,7 +283,7 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>
-                      {product.nombre}
+                      {product.marca ? `${product.marca} - ${product.nombre}` : product.nombre}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
                       {product.tipo} {product.codigo_barras && `• ${product.codigo_barras}`}
@@ -297,9 +292,13 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
                   <div style={{ textAlign: 'right' }}>
                     <Badge 
                       bg={product.stock === 0 ? 'danger' : product.stock <= (product.umbral_low || 5) ? 'warning' : 'success'}
-                      style={{ fontSize: '0.7rem' }}
+                      style={{ 
+                        fontSize: '1.1rem', 
+                        padding: '0.5rem 0.75rem',
+                        minWidth: '50px'
+                      }}
                     >
-                      Stock: {product.stock}
+                      {product.stock}
                     </Badge>
                   </div>
                 </div>
@@ -309,67 +308,19 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
         </Card>
       )}
 
-      {/* Productos recientes */}
-      {!searchTerm && recentProductsList.length > 0 && (
+      {/* Productos Frecuentes */}
+      {filteredProducts.length === 0 && !searchTerm && frequentProductsList.length > 0 && (
         <Card className="mb-3">
           <Card.Header style={{ 
             background: '#f8fafc', 
-            borderBottom: '1px solid #e2e8f0',
-            fontSize: '0.75rem',
             fontWeight: 700,
+            fontSize: '0.75rem',
             textTransform: 'uppercase',
             color: '#64748b',
-            padding: '0.75rem 1rem'
+            letterSpacing: '0.5px'
           }}>
             <FaStar className="me-2" style={{ color: '#f59e0b' }} />
-            Recientes
-          </Card.Header>
-          <ListGroup variant="flush">
-            {recentProductsList.map(product => (
-              <ListGroup.Item
-                key={product.id}
-                onClick={() => handleSelectProduct(product)}
-                style={{
-                  cursor: 'pointer',
-                  padding: '0.875rem 1rem',
-                  borderLeft: `4px solid ${getStockColor(product.stock, product.umbral_low)}`
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                      {product.nombre}
-                    </div>
-                    <Badge 
-                      bg={product.stock === 0 ? 'danger' : product.stock <= (product.umbral_low || 5) ? 'warning' : 'success'}
-                      style={{ fontSize: '0.7rem' }}
-                    >
-                      Stock: {product.stock}
-                    </Badge>
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: 600 }}>
-                    Actualizar →
-                  </div>
-                </div>
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        </Card>
-      )}
-
-      {/* Productos frecuentes */}
-      {!searchTerm && frequentProductsList.length > 0 && (
-        <Card className="mb-3">
-          <Card.Header style={{ 
-            background: '#f8fafc', 
-            borderBottom: '1px solid #e2e8f0',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            color: '#64748b',
-            padding: '0.75rem 1rem'
-          }}>
-            📊 Más Usados
+            Productos Frecuentes
           </Card.Header>
           <ListGroup variant="flush">
             {frequentProductsList.map(product => (
@@ -379,58 +330,119 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
                 style={{
                   cursor: 'pointer',
                   padding: '0.875rem 1rem',
-                  borderLeft: `4px solid ${getStockColor(product.stock, product.umbral_low)}`
+                  borderLeft: `3px solid ${getStockColor(product.stock, product.umbral_low)}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                      {product.nombre}
-                    </div>
-                    <Badge 
-                      bg={product.stock === 0 ? 'danger' : product.stock <= (product.umbral_low || 5) ? 'warning' : 'success'}
-                      style={{ fontSize: '0.7rem' }}
-                    >
-                      Stock: {product.stock}
-                    </Badge>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                    {product.marca ? `${product.marca} - ${product.nombre}` : product.nombre}
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: 600 }}>
-                    Actualizar →
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                    {product.tipo}
                   </div>
                 </div>
+                <Badge 
+                  bg={product.stock === 0 ? 'danger' : product.stock <= (product.umbral_low || 5) ? 'warning' : 'success'}
+                  style={{ fontSize: '0.95rem', padding: '0.4rem 0.6rem' }}
+                >
+                  {product.stock}
+                </Badge>
               </ListGroup.Item>
             ))}
           </ListGroup>
         </Card>
       )}
 
-      {/* Modal de actualización rápida */}
+      {/* Productos Recientes */}
+      {filteredProducts.length === 0 && !searchTerm && recentProductsList.length > 0 && (
+        <Card className="mb-3">
+          <Card.Header style={{ 
+            background: '#f8fafc', 
+            fontWeight: 700,
+            fontSize: '0.75rem',
+            textTransform: 'uppercase',
+            color: '#64748b',
+            letterSpacing: '0.5px'
+          }}>
+            Actualizados Recientemente
+          </Card.Header>
+          <ListGroup variant="flush">
+            {recentProductsList.map(product => (
+              <ListGroup.Item
+                key={product.id}
+                onClick={() => handleSelectProduct(product)}
+                style={{
+                  cursor: 'pointer',
+                  padding: '0.875rem 1rem',
+                  borderLeft: `3px solid ${getStockColor(product.stock, product.umbral_low)}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                    {product.marca ? `${product.marca} - ${product.nombre}` : product.nombre}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                    {product.tipo}
+                  </div>
+                </div>
+                <Badge 
+                  bg={product.stock === 0 ? 'danger' : product.stock <= (product.umbral_low || 5) ? 'warning' : 'success'}
+                  style={{ fontSize: '0.95rem', padding: '0.4rem 0.6rem' }}
+                >
+                  {product.stock}
+                </Badge>
+              </ListGroup.Item>
+            ))}
+          </ListGroup>
+        </Card>
+      )}
+
+      {/* Modal para actualizar stock */}
       <Modal 
         show={showModal} 
         onHide={() => setShowModal(false)}
         centered
-        fullscreen="sm-down"
+        animation={true}
       >
-        <Modal.Header closeButton style={{ borderBottom: '1px solid #e2e8f0' }}>
-          <Modal.Title style={{ fontSize: '1.125rem' }}>
+        <Modal.Header 
+          closeButton 
+          style={{ 
+            borderBottom: '2px solid #e2e8f0',
+            background: '#f8fafc',
+            padding: '1.25rem'
+          }}
+        >
+          <Modal.Title style={{ fontSize: '1.1rem', fontWeight: 700 }}>
             Actualizar Stock
           </Modal.Title>
         </Modal.Header>
         <Modal.Body style={{ padding: '1.5rem' }}>
           {selectedProduct && (
             <>
-              <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-                <h4 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-                  {selectedProduct.nombre}
-                </h4>
-                <Badge bg="secondary">{selectedProduct.tipo}</Badge>
+              <div style={{ 
+                background: '#f1f5f9', 
+                padding: '1rem', 
+                borderRadius: '10px',
+                marginBottom: '1.5rem',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.25rem' }}>
+                  {selected Product.marca ? `${selectedProduct.marca} - ${selectedProduct.nombre}` : selectedProduct.nombre}
+                </div>
+                <Badge bg="secondary" className="me-2">{selectedProduct.tipo}</Badge>
                 {selectedProduct.importante && (
-                  <Badge bg="warning" className="ms-2">
+                  <Badge bg="warning">
                     <FaStar /> Importante
                   </Badge>
                 )}
                 
-                {/* Mostrar código de barras si existe, o botón para agregarlo */}
+                {/* BOTÓN PARA AGREGAR CÓDIGO DE BARRAS */}
                 {selectedProduct.codigo_barras ? (
                   <div style={{ 
                     marginTop: '0.75rem',
@@ -450,9 +462,8 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
                       variant="outline-info"
                       size="sm"
                       onClick={() => {
-                        // Guardar el producto seleccionado y abrir escáner
                         setShowModal(false);
-                        setShowBarcodeScanner(true);
+                        setShowSimpleScanner(true);
                       }}
                     >
                       <FaBarcode className="me-1" />
@@ -483,58 +494,52 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
 
               <Form.Group className="mb-3">
                 <Form.Label style={{ fontWeight: 600, marginBottom: '0.75rem' }}>
-                  Botones rápidos:
+                  Nuevo Stock
                 </Form.Label>
-                <div className="d-grid gap-2">
-                  <ButtonGroup>
-                    <Button 
-                      variant="outline-danger"
-                      onClick={() => adjustStock(-10)}
-                      style={{ height: '50px', fontSize: '1.125rem' }}
-                    >
-                      -10
-                    </Button>
-                    <Button 
-                      variant="outline-danger"
-                      onClick={() => adjustStock(-1)}
-                      style={{ height: '50px', fontSize: '1.125rem' }}
-                    >
-                      <FaMinus />
-                    </Button>
-                    <Button 
-                      variant="outline-success"
-                      onClick={() => adjustStock(1)}
-                      style={{ height: '50px', fontSize: '1.125rem' }}
-                    >
-                      <FaPlus />
-                    </Button>
-                    <Button 
-                      variant="outline-success"
-                      onClick={() => adjustStock(10)}
-                      style={{ height: '50px', fontSize: '1.125rem' }}
-                    >
-                      +10
-                    </Button>
-                  </ButtonGroup>
-                </div>
-              </Form.Group>
+                
+                <ButtonGroup className="w-100 mb-3">
+                  <Button 
+                    variant="outline-danger" 
+                    onClick={() => adjustStock(-10)}
+                    style={{ height: '50px', fontSize: '1.1rem', fontWeight: 700 }}
+                  >
+                    -10
+                  </Button>
+                  <Button 
+                    variant="outline-warning" 
+                    onClick={() => adjustStock(-1)}
+                    style={{ height: '50px', fontSize: '1.1rem', fontWeight: 700 }}
+                  >
+                    -1
+                  </Button>
+                  <Button 
+                    variant="outline-success" 
+                    onClick={() => adjustStock(1)}
+                    style={{ height: '50px', fontSize: '1.1rem', fontWeight: 700 }}
+                  >
+                    +1
+                  </Button>
+                  <Button 
+                    variant="outline-success" 
+                    onClick={() => adjustStock(10)}
+                    style={{ height: '50px', fontSize: '1.1rem', fontWeight: 700 }}
+                  >
+                    +10
+                  </Button>
+                </ButtonGroup>
 
-              <Form.Group>
-                <Form.Label style={{ fontWeight: 600, marginBottom: 0, fontSize: '0.875rem' }}>
-                  O ingresa el nuevo stock:
-                </Form.Label>
                 <Form.Control
                   type="number"
-                  inputMode="decimal"
                   value={newStock}
                   onChange={(e) => setNewStock(e.target.value)}
-                  style={{
-                    fontSize: '1.25rem',
-                    fontWeight: 700,
+                  placeholder="Ingrese nuevo stock"
+                  style={{ 
+                    height: '60px', 
+                    fontSize: '1.5rem',
                     textAlign: 'center',
-                    height: '60px',
-                    borderRadius: '12px',
-                    border: '2px solid #6366f1'
+                    fontWeight: 700,
+                    borderRadius: '10px',
+                    border: '2px solid #e2e8f0'
                   }}
                   autoFocus
                 />
@@ -566,7 +571,6 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
         show={showBarcodeScanner}
         onHide={() => {
           setShowBarcodeScanner(false);
-          // Si hay un producto seleccionado, volver al modal de stock
           if (selectedProduct) {
             setShowModal(true);
           }
@@ -577,9 +581,9 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
 
       {/* Modal de Escáner Simple para Agregar Código */}
       <BarcodeScannerSimple
-        show={showBarcodeScanner && selectedProduct && !selectedProduct.codigo_barras}
+        show={showSimpleScanner}
         onHide={() => {
-          setShowBarcodeScanner(false);
+          setShowSimpleScanner(false);
           setShowModal(true);
         }}
         onBarcodeDetected={handleBarcodeScannedForProduct}
@@ -599,7 +603,6 @@ function QuickStockMobile({ inventory, user, onToggleView }) {
           transform: scale(0.98);
         }
 
-        /* Scroll suave */
         .quick-stock-mobile * {
           -webkit-overflow-scrolling: touch;
         }
@@ -623,18 +626,10 @@ function BarcodeScannerSimple({ show, onHide, onBarcodeDetected }) {
           html5QrcodeScanner = new Html5QrcodeScanner(
             "barcode-simple-reader",
             { 
-              fps: 30, // Mayor velocidad
-              qrbox: { width: 300, height: 150 }, // Mejor para códigos de barras
+              fps: 30,
+              qrbox: { width: 300, height: 150 },
               aspectRatio: 2.0,
-              formatsToSupport: [
-                0,  // CODE_128
-                6,  // EAN_13
-                8,  // UPC_A
-                9,  // UPC_E
-                1,  // CODE_39
-                5,  // EAN_8
-                7,  // ITF
-              ],
+              formatsToSupport: [0, 6, 8, 9, 1, 5, 7],
               experimentalFeatures: {
                 useBarCodeDetectorIfSupported: true
               },
@@ -649,7 +644,7 @@ function BarcodeScannerSimple({ show, onHide, onBarcodeDetected }) {
               console.log(`✅ Código capturado: ${decodedText}`);
               onBarcodeDetected(decodedText);
               if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear().catch(console.error);
+                html5QrcodeScanner.clear().catch(() => {});
               }
             },
             (errorMessage) => {
@@ -667,7 +662,7 @@ function BarcodeScannerSimple({ show, onHide, onBarcodeDetected }) {
       return () => {
         clearTimeout(timer);
         if (html5QrcodeScanner) {
-          html5QrcodeScanner.clear().catch(console.error);
+          html5QrcodeScanner.clear().catch(() => {});
         }
       };
     }
@@ -718,7 +713,7 @@ function BarcodeScannerSimple({ show, onHide, onBarcodeDetected }) {
             variant={scannerMode === 'manual' ? 'primary' : 'outline-primary'}
             onClick={() => setScannerMode('manual')}
           >
-            Ingreso Manual
+            Manual
           </Button>
         </div>
 
