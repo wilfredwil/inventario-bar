@@ -1,4 +1,4 @@
-// src/components/InventoryList.js - CON TOAST
+// src/components/InventoryList.js
 import React, { useState } from 'react';
 import { Row, Col, Card, Table, Button, Form, Badge, InputGroup, Dropdown, ButtonGroup } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrash, FaStar, FaRegStar, FaSearch, FaFilePdf, FaBarcode, FaMobileAlt } from 'react-icons/fa';
@@ -8,17 +8,15 @@ import ProductModal from './ProductModal';
 import QuickStockMobile from './QuickStockMobile';
 import BarcodeScanner from './BarcodeScanner';
 import { generateInventoryPDF } from '../utils/pdfGenerator';
-import { useToast } from './ToastNotification'; // <-- AGREGADO
+import { useToast } from './ToastNotification';
 
 function InventoryList({ inventory, user, userRole, providers }) {
-  const toast = useToast(); // <-- AGREGADO
+  const toast = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
-  // REMOVIDOS: const [success, setSuccess] = useState('');
-  // REMOVIDOS: const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [focusMode, setFocusMode] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -66,6 +64,52 @@ function InventoryList({ inventory, user, userRole, providers }) {
     important: inventory.filter(i => i.importante).length
   };
 
+  const getCategoryBadge = (tipo) => {
+    const categoryColors = {
+      licor: { bg: 'primary', text: 'Licor' },
+      vino: { bg: 'danger', text: 'Vino' },
+      cerveza: { bg: 'warning', text: 'Cerveza' },
+      whisky: { bg: 'dark', text: 'Whisky' },
+      vodka: { bg: 'info', text: 'Vodka' },
+      gin: { bg: 'success', text: 'Gin' },
+      ron: { bg: 'secondary', text: 'Ron' },
+      tequila: { bg: 'orange', text: 'Tequila' }
+    };
+    
+    const category = categoryColors[tipo?.toLowerCase()] || { bg: 'secondary', text: tipo || 'N/A' };
+    
+    return (
+      <Badge 
+        bg={category.bg} 
+        className={category.bg === 'warning' ? 'text-dark' : ''}
+        style={category.bg === 'orange' ? { backgroundColor: '#fd7e14', color: 'white' } : {}}
+      >
+        {category.text}
+      </Badge>
+    );
+  };
+
+  const getStockBadge = (item) => {
+    if (item.stock === 0) return <Badge bg="danger">Sin Stock</Badge>;
+    if (item.stock <= (item.umbral_low || 5)) return <Badge bg="warning" text="dark">Stock Bajo</Badge>;
+    return <Badge bg="success">OK</Badge>;
+  };
+
+  const getStockColor = (item) => {
+    if (item.stock === 0) return '#dc3545';
+    if (item.stock <= (item.umbral_low || 5)) return '#ffc107';
+    return '#28a745';
+  };
+
+  const generatePDF = (type) => {
+    try {
+      generateInventoryPDF(type, inventory, providers);
+      toast.success('PDF generado correctamente');
+    } catch (error) {
+      toast.error('Error al generar PDF');
+    }
+  };
+
   const handleAddItem = () => {
     setEditingItem(null);
     setShowModal(true);
@@ -78,7 +122,7 @@ function InventoryList({ inventory, user, userRole, providers }) {
 
   const handleBarcodeDetected = (product) => {
     handleEditItem(product);
-    toast.success(`Producto encontrado: ${product.nombre}`); // <-- CAMBIADO
+    toast.success(`Producto encontrado: ${product.nombre}`);
   };
 
   const toggleView = () => {
@@ -100,10 +144,10 @@ function InventoryList({ inventory, user, userRole, providers }) {
         tipo_inventario: 'bar'
       });
 
-      toast.success(`"${item.nombre}" eliminado correctamente`); // <-- CAMBIADO
+      toast.success(`"${item.nombre}" eliminado correctamente`);
     } catch (error) {
       console.error('Error eliminando producto:', error);
-      toast.error('Error al eliminar el producto'); // <-- CAMBIADO
+      toast.error('Error al eliminar el producto');
     }
   };
 
@@ -130,10 +174,10 @@ function InventoryList({ inventory, user, userRole, providers }) {
         stock_nuevo: stockValue
       });
       
-      toast.success(`Stock de ${item.nombre} actualizado`); // <-- CAMBIADO
+      toast.success(`Stock de ${item.nombre} actualizado`);
     } catch (error) {
       console.error('Error actualizando stock:', error);
-      toast.error('Error actualizando el stock'); // <-- CAMBIADO
+      toast.error('Error actualizando el stock');
     }
   };
 
@@ -153,38 +197,15 @@ function InventoryList({ inventory, user, userRole, providers }) {
         tipo_inventario: 'bar'
       });
       
-      toast.success(`${item.nombre} ${!item.importante ? 'marcado' : 'desmarcado'} como importante`); // <-- AGREGADO
+      toast.success(`${item.nombre} ${!item.importante ? 'marcado' : 'desmarcado'} como importante`);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Error al actualizar producto'); // <-- AGREGADO
+      toast.error('Error al actualizar producto');
     }
-  };
-
-  const generatePDF = (type) => {
-    try {
-      generateInventoryPDF(type, inventory, providers);
-      toast.success('PDF generado correctamente'); // <-- AGREGADO
-    } catch (error) {
-      toast.error('Error al generar PDF'); // <-- AGREGADO
-    }
-  };
-
-  const getStockBadge = (item) => {
-    if (item.stock === 0) return <Badge bg="danger">Sin Stock</Badge>;
-    if (item.stock <= (item.umbral_low || 5)) return <Badge bg="warning" text="dark">Stock Bajo</Badge>;
-    return <Badge bg="success">OK</Badge>;
-  };
-
-  const getStockColor = (item) => {
-    if (item.stock === 0) return '#dc3545';
-    if (item.stock <= (item.umbral_low || 5)) return '#ffc107';
-    return '#28a745';
   };
 
   return (
     <>
-      {/* REMOVIDO: Alerts de success y error */}
-      
       {(isMobile && !forceDesktopView) ? (
         <QuickStockMobile 
           inventory={inventory}
@@ -329,112 +350,124 @@ function InventoryList({ inventory, user, userRole, providers }) {
             </Card.Body>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm border-0">
             <Card.Body className="p-0">
-              <Table hover responsive>
-                <thead className="table-light">
-                  <tr>
-                    <th style={{ width: '40px' }}></th>
-                    <th>Producto</th>
-                    <th>Categoría</th>
-                    <th className="text-center">Stock</th>
-                    <th>Proveedor</th>
-                    <th className="text-center">Estado</th>
-                    <th className="text-end">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredInventory.length === 0 ? (
+              <div className="table-responsive">
+                <Table hover className="mb-0" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <thead style={{ backgroundColor: 'var(--bg-tertiary)', borderBottom: '2px solid var(--border-medium)' }}>
                     <tr>
-                      <td colSpan="7" className="text-center text-muted py-4">
-                        {searchTerm || categoryFilter !== 'all' || stockFilter !== 'all' 
-                          ? 'No se encontraron productos con los filtros aplicados'
-                          : 'No hay productos en el inventario'}
-                      </td>
+                      <th style={{ width: '50px', padding: '1rem' }}></th>
+                      <th style={{ minWidth: '250px', padding: '1rem' }}>Producto</th>
+                      <th style={{ width: '130px', padding: '1rem' }}>Categoría</th>
+                      <th className="text-center" style={{ width: '120px', padding: '1rem' }}>Stock</th>
+                      <th style={{ width: '180px', padding: '1rem' }}>Proveedor</th>
+                      <th className="text-center" style={{ width: '120px', padding: '1rem' }}>Estado</th>
+                      <th className="text-center" style={{ width: '140px', padding: '1rem' }}>Acciones</th>
                     </tr>
-                  ) : (
-                    filteredInventory.map(item => {
-                      const provider = providers.find(p => p.id === item.proveedor_id);
-                      return (
-                        <tr key={item.id} className={item.importante ? 'important-product' : ''}>
-                          <td className="text-center">
-                            <Button
-                              variant="link"
-                              size="sm"
-                              onClick={() => handleToggleImportante(item)}
-                              className="p-0"
-                            >
-                              {item.importante ? 
-                                <FaStar className="text-warning" /> : 
-                                <FaRegStar className="text-muted" />
-                              }
-                            </Button>
-                          </td>
-                          <td>
-                            <div>
-                              <strong>{item.marca ? `${item.marca} - ` : ''}{item.nombre}</strong>
-                            </div>
-                            {item.codigo_barras && (
-                              <small className="text-muted">
-                                Código: {item.codigo_barras}
-                              </small>
-                            )}
-                          </td>
-                          <td>
-                            <Badge bg="secondary">
-                              {item.tipo ? item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1) : 'N/A'}
-                            </Badge>
-                          </td>
-                          <td className="text-center">
-                            <Form.Control
-                              type="number"
-                              value={item.stock || 0}
-                              onChange={(e) => handleQuickStockUpdate(item, e.target.value)}
-                              style={{ 
-                                width: '70px',
-                                textAlign: 'center',
-                                fontWeight: 'bold',
-                                color: getStockColor(item),
-                                fontSize: '1.1rem'
-                              }}
-                              min="0"
-                              step="0.5"
-                            />
-                          </td>
-                          <td>
-                            {provider ? (
-                              <small>{provider.empresa || provider.nombre}</small>
-                            ) : (
-                              <small className="text-muted">Sin proveedor</small>
-                            )}
-                          </td>
-                          <td className="text-center">
-                            {getStockBadge(item)}
-                          </td>
-                          <td className="text-end">
-                            <ButtonGroup size="sm">
-                              <Button 
-                                variant="outline-primary" 
-                                onClick={() => handleEditItem(item)}
+                  </thead>
+                  <tbody>
+                    {filteredInventory.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center text-muted py-4">
+                          {searchTerm || categoryFilter !== 'all' || stockFilter !== 'all' 
+                            ? 'No se encontraron productos con los filtros aplicados'
+                            : 'No hay productos en el inventario'}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredInventory.map(item => {
+                        const provider = providers.find(p => p.id === item.proveedor_id);
+                        return (
+                          <tr key={item.id} className={item.importante ? 'important-product' : ''} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                            <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => handleToggleImportante(item)}
+                                className="p-0"
+                                style={{ fontSize: '1.2rem' }}
                               >
-                                <FaEdit />
+                                {item.importante ? 
+                                  <FaStar className="text-warning" /> : 
+                                  <FaRegStar className="text-muted" />
+                                }
                               </Button>
-                              {(userRole === 'admin' || userRole === 'manager') && (
-                                <Button 
-                                  variant="outline-danger"
-                                  onClick={() => handleDeleteItem(item)}
-                                >
-                                  <FaTrash />
-                                </Button>
+                            </td>
+                            <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                              <div>
+                                <strong style={{ fontSize: '0.95rem' }}>
+                                  {item.marca ? `${item.marca} - ` : ''}{item.nombre}
+                                </strong>
+                              </div>
+                              {item.codigo_barras && (
+                                <small className="text-muted" style={{ fontSize: '0.8rem' }}>
+                                  📦 {item.codigo_barras}
+                                </small>
                               )}
-                            </ButtonGroup>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </Table>
+                            </td>
+                            <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                              {getCategoryBadge(item.tipo)}
+                            </td>
+                            <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                              <Form.Control
+                                type="number"
+                                value={item.stock || 0}
+                                onChange={(e) => handleQuickStockUpdate(item, e.target.value)}
+                                className="stock-input"
+                                style={{ 
+                                  width: '90px',
+                                  textAlign: 'center',
+                                  fontWeight: 'bold',
+                                  color: getStockColor(item),
+                                  fontSize: '1rem',
+                                  padding: '0.5rem',
+                                  margin: '0 auto',
+                                  display: 'inline-block',
+                                  backgroundColor: 'transparent',
+                                  border: '2px solid var(--border-light)',
+                                  borderRadius: '8px'
+                                }}
+                                min="0"
+                                step="0.5"
+                              />
+                            </td>
+                            <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                              {provider ? (
+                                <span style={{ fontSize: '0.9rem' }}>{provider.empresa || provider.nombre}</span>
+                              ) : (
+                                <small className="text-muted">Sin proveedor</small>
+                              )}
+                            </td>
+                            <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                              {getStockBadge(item)}
+                            </td>
+                            <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                              <ButtonGroup size="sm">
+                                <Button 
+                                  variant="outline-primary" 
+                                  onClick={() => handleEditItem(item)}
+                                  style={{ padding: '0.4rem 0.8rem' }}
+                                >
+                                  <FaEdit />
+                                </Button>
+                                {(userRole === 'admin' || userRole === 'manager') && (
+                                  <Button 
+                                    variant="outline-danger"
+                                    onClick={() => handleDeleteItem(item)}
+                                    style={{ padding: '0.4rem 0.8rem' }}
+                                  >
+                                    <FaTrash />
+                                  </Button>
+                                )}
+                              </ButtonGroup>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </Table>
+              </div>
             </Card.Body>
           </Card>
         </>
