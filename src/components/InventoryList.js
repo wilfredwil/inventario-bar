@@ -1,6 +1,6 @@
-// src/components/InventoryList.js
+// src/components/InventoryList.js - CON TOAST
 import React, { useState } from 'react';
-import { Row, Col, Card, Table, Button, Form, Badge, InputGroup, Alert, Dropdown, ButtonGroup } from 'react-bootstrap';
+import { Row, Col, Card, Table, Button, Form, Badge, InputGroup, Dropdown, ButtonGroup } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrash, FaStar, FaRegStar, FaSearch, FaFilePdf, FaBarcode, FaMobileAlt } from 'react-icons/fa';
 import { updateDoc, deleteDoc, doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -8,15 +8,17 @@ import ProductModal from './ProductModal';
 import QuickStockMobile from './QuickStockMobile';
 import BarcodeScanner from './BarcodeScanner';
 import { generateInventoryPDF } from '../utils/pdfGenerator';
+import { useToast } from './ToastNotification'; // <-- AGREGADO
 
 function InventoryList({ inventory, user, userRole, providers }) {
+  const toast = useToast(); // <-- AGREGADO
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  // REMOVIDOS: const [success, setSuccess] = useState('');
+  // REMOVIDOS: const [error, setError] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [focusMode, setFocusMode] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -34,17 +36,14 @@ function InventoryList({ inventory, user, userRole, providers }) {
     { value: 'tequila', label: 'Tequilas' }
   ];
 
-  // Detectar cambios de tamaño de pantalla
   React.useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Filtrar inventario
   const filteredInventory = inventory.filter(item => {
     const matchesSearch = item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           item.marca?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,13 +54,11 @@ function InventoryList({ inventory, user, userRole, providers }) {
       stockFilter === 'all' ? true :
       stockFilter === 'low' ? (item.stock <= (item.umbral_low || 5) && item.stock > 0) :
       stockFilter === 'out' ? item.stock === 0 :
-      stockFilter === 'good' ? item.stock > (item.umbral_low || 5) :
-      true;
+      stockFilter === 'good' ? item.stock > (item.umbral_low || 5) : true;
     
     return matchesSearch && matchesCategory && matchesStock;
   });
 
-  // Estadísticas rápidas
   const stats = {
     total: inventory.length,
     lowStock: inventory.filter(i => i.stock <= (i.umbral_low || 5) && i.stock > 0).length,
@@ -80,10 +77,8 @@ function InventoryList({ inventory, user, userRole, providers }) {
   };
 
   const handleBarcodeDetected = (product) => {
-    // Abrir modal de edición del producto encontrado
     handleEditItem(product);
-    setSuccess(`Producto encontrado: ${product.nombre}`);
-    setTimeout(() => setSuccess(''), 3000);
+    toast.success(`Producto encontrado: ${product.nombre}`); // <-- CAMBIADO
   };
 
   const toggleView = () => {
@@ -105,12 +100,10 @@ function InventoryList({ inventory, user, userRole, providers }) {
         tipo_inventario: 'bar'
       });
 
-      setSuccess(`"${item.nombre}" eliminado correctamente`);
-      setTimeout(() => setSuccess(''), 3000);
+      toast.success(`"${item.nombre}" eliminado correctamente`); // <-- CAMBIADO
     } catch (error) {
       console.error('Error eliminando producto:', error);
-      setError('Error al eliminar el producto');
-      setTimeout(() => setError(''), 3000);
+      toast.error('Error al eliminar el producto'); // <-- CAMBIADO
     }
   };
 
@@ -137,12 +130,10 @@ function InventoryList({ inventory, user, userRole, providers }) {
         stock_nuevo: stockValue
       });
       
-      setSuccess(`Stock de ${item.nombre} actualizado`);
-      setTimeout(() => setSuccess(''), 2000);
+      toast.success(`Stock de ${item.nombre} actualizado`); // <-- CAMBIADO
     } catch (error) {
       console.error('Error actualizando stock:', error);
-      setError('Error actualizando el stock');
-      setTimeout(() => setError(''), 3000);
+      toast.error('Error actualizando el stock'); // <-- CAMBIADO
     }
   };
 
@@ -161,13 +152,21 @@ function InventoryList({ inventory, user, userRole, providers }) {
         detalles: `Producto ${!item.importante ? 'marcado' : 'desmarcado'} como importante`,
         tipo_inventario: 'bar'
       });
+      
+      toast.success(`${item.nombre} ${!item.importante ? 'marcado' : 'desmarcado'} como importante`); // <-- AGREGADO
     } catch (error) {
       console.error('Error:', error);
+      toast.error('Error al actualizar producto'); // <-- AGREGADO
     }
   };
 
   const generatePDF = (type) => {
-    generateInventoryPDF(type, inventory, providers);
+    try {
+      generateInventoryPDF(type, inventory, providers);
+      toast.success('PDF generado correctamente'); // <-- AGREGADO
+    } catch (error) {
+      toast.error('Error al generar PDF'); // <-- AGREGADO
+    }
   };
 
   const getStockBadge = (item) => {
@@ -184,24 +183,23 @@ function InventoryList({ inventory, user, userRole, providers }) {
 
   return (
     <>
-      {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
-      {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
-
-      {/* Vista móvil optimizada */}
+      {/* REMOVIDO: Alerts de success y error */}
+      
       {(isMobile && !forceDesktopView) ? (
         <QuickStockMobile 
-          inventory={inventory} 
-          user={user} 
+          inventory={inventory}
+          user={user}
           onToggleView={toggleView}
         />
       ) : (
         <>
-          {/* Estadísticas rápidas */}
+          <h2 className="mb-4">📦 Inventario de Bar</h2>
+
           <Row className="mb-4">
             <Col md={3} sm={6} className="mb-3">
               <Card className="text-center">
                 <Card.Body>
-                  <h3 className="text-primary">{stats.total}</h3>
+                  <h3 className="text-primary mb-1">{stats.total}</h3>
                   <small className="text-muted">Total Productos</small>
                 </Card.Body>
               </Card>
@@ -209,7 +207,7 @@ function InventoryList({ inventory, user, userRole, providers }) {
             <Col md={3} sm={6} className="mb-3">
               <Card className="text-center">
                 <Card.Body>
-                  <h3 className="text-warning">{stats.lowStock}</h3>
+                  <h3 className="text-warning mb-1">{stats.lowStock}</h3>
                   <small className="text-muted">Stock Bajo</small>
                 </Card.Body>
               </Card>
@@ -217,7 +215,7 @@ function InventoryList({ inventory, user, userRole, providers }) {
             <Col md={3} sm={6} className="mb-3">
               <Card className="text-center">
                 <Card.Body>
-                  <h3 className="text-danger">{stats.outOfStock}</h3>
+                  <h3 className="text-danger mb-1">{stats.outOfStock}</h3>
                   <small className="text-muted">Sin Stock</small>
                 </Card.Body>
               </Card>
@@ -225,15 +223,14 @@ function InventoryList({ inventory, user, userRole, providers }) {
             <Col md={3} sm={6} className="mb-3">
               <Card className="text-center">
                 <Card.Body>
-                  <h3 className="text-info">{stats.important}</h3>
+                  <h3 className="text-info mb-1">{stats.important}</h3>
                   <small className="text-muted">Importantes</small>
                 </Card.Body>
               </Card>
             </Col>
           </Row>
 
-          {/* Controles */}
-          <Card className="mb-4" style={{ overflow: 'visible' }}>
+          <Card className="mb-3" style={{ overflow: 'visible' }}>
             <Card.Body style={{ overflow: 'visible' }}>
               <Row className="align-items-center">
                 <Col md={4} className="mb-3 mb-md-0">
@@ -248,7 +245,6 @@ function InventoryList({ inventory, user, userRole, providers }) {
                 </Col>
 
                 <Col md={8} className="text-md-end">
-                  {/* Botón volver a vista móvil (solo visible cuando está forzado en desktop) */}
                   {isMobile && forceDesktopView && (
                     <Button 
                       variant="outline-secondary" 
@@ -260,7 +256,6 @@ function InventoryList({ inventory, user, userRole, providers }) {
                     </Button>
                   )}
 
-                  {/* Botón de Escáner - NUEVO */}
                   <Button 
                     variant="success" 
                     onClick={() => setShowBarcodeScanner(true)}
@@ -334,7 +329,6 @@ function InventoryList({ inventory, user, userRole, providers }) {
             </Card.Body>
           </Card>
 
-          {/* Tabla de inventario */}
           <Card>
             <Card.Body className="p-0">
               <Table hover responsive>
@@ -362,7 +356,7 @@ function InventoryList({ inventory, user, userRole, providers }) {
                     filteredInventory.map(item => {
                       const provider = providers.find(p => p.id === item.proveedor_id);
                       return (
-                        <tr key={item.id}>
+                        <tr key={item.id} className={item.importante ? 'important-product' : ''}>
                           <td className="text-center">
                             <Button
                               variant="link"
@@ -379,59 +373,61 @@ function InventoryList({ inventory, user, userRole, providers }) {
                           <td>
                             <div>
                               <strong>{item.marca ? `${item.marca} - ` : ''}{item.nombre}</strong>
-                              {item.codigo_barras && (
-                                <div className="text-muted small">
-                                  <FaBarcode className="me-1" />
-                                  {item.codigo_barras}
-                                </div>
-                              )}
                             </div>
+                            {item.codigo_barras && (
+                              <small className="text-muted">
+                                Código: {item.codigo_barras}
+                              </small>
+                            )}
                           </td>
                           <td>
-                            <Badge bg="info">
-                              {categories.find(c => c.value === item.tipo)?.label || item.tipo}
+                            <Badge bg="secondary">
+                              {item.tipo ? item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1) : 'N/A'}
                             </Badge>
                           </td>
                           <td className="text-center">
                             <Form.Control
                               type="number"
-                              step="0.01"
-                              value={item.stock}
+                              value={item.stock || 0}
                               onChange={(e) => handleQuickStockUpdate(item, e.target.value)}
-                              style={{
-                                width: '80px',
-                                display: 'inline-block',
-                                borderColor: getStockColor(item),
-                                fontWeight: 'bold'
+                              style={{ 
+                                width: '70px',
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                color: getStockColor(item),
+                                fontSize: '1.1rem'
                               }}
+                              min="0"
+                              step="0.5"
                             />
                           </td>
                           <td>
-                            <small className="text-muted">
-                              {provider?.empresa || 'Sin proveedor'}
-                            </small>
+                            {provider ? (
+                              <small>{provider.empresa || provider.nombre}</small>
+                            ) : (
+                              <small className="text-muted">Sin proveedor</small>
+                            )}
                           </td>
                           <td className="text-center">
                             {getStockBadge(item)}
                           </td>
                           <td className="text-end">
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              onClick={() => handleEditItem(item)}
-                              className="me-1"
-                            >
-                              <FaEdit />
-                            </Button>
-                            {userRole === 'admin' && (
-                              <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() => handleDeleteItem(item)}
+                            <ButtonGroup size="sm">
+                              <Button 
+                                variant="outline-primary" 
+                                onClick={() => handleEditItem(item)}
                               >
-                                <FaTrash />
+                                <FaEdit />
                               </Button>
-                            )}
+                              {(userRole === 'admin' || userRole === 'manager') && (
+                                <Button 
+                                  variant="outline-danger"
+                                  onClick={() => handleDeleteItem(item)}
+                                >
+                                  <FaTrash />
+                                </Button>
+                              )}
+                            </ButtonGroup>
                           </td>
                         </tr>
                       );
@@ -444,7 +440,6 @@ function InventoryList({ inventory, user, userRole, providers }) {
         </>
       )}
 
-      {/* Modal de Producto */}
       <ProductModal
         show={showModal}
         onHide={() => setShowModal(false)}
@@ -454,7 +449,6 @@ function InventoryList({ inventory, user, userRole, providers }) {
         categories={categories}
       />
 
-      {/* Modal de Escáner de Código de Barras - NUEVO */}
       <BarcodeScanner
         show={showBarcodeScanner}
         onHide={() => setShowBarcodeScanner(false)}
