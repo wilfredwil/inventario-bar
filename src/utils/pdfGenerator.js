@@ -120,7 +120,7 @@ const generateStandardPDF = (doc, items, title, subtitle) => {
   }
   currentY += 5;
 
-  // Tabla de productos CON MARCA
+  // Tabla de productos
   const tableData = items.map(item => [
     item.nombre || '',
     item.marca || '-',
@@ -158,15 +158,19 @@ const generateStandardPDF = (doc, items, title, subtitle) => {
       7: { cellWidth: 10, halign: 'center' }
     },
     margin: { left: 14, right: 14 },
+    didDrawPage: (data) => {
+      // Asegurar que los estilos se apliquen correctamente
+    },
     willDrawCell: (data) => {
-      // Aplicar fondo amarillo ANTES de que se dibuje la celda
       if (data.section === 'body') {
         const item = items[data.row.index];
+        
+        // Fondo amarillo para productos importantes - FORZAR
         if (item?.importante) {
-          data.cell.styles.fillColor = [255, 250, 205];
+          data.cell.styles.fillColor = [255, 255, 204]; // Amarillo más visible
         }
         
-        // Colorear el stock según el estado
+        // Color del texto en columna Stock
         if (data.column.index === 3) {
           const stock = parseInt(data.cell.raw);
           const umbral = item?.umbral_low || 5;
@@ -181,17 +185,60 @@ const generateStandardPDF = (doc, items, title, subtitle) => {
             data.cell.styles.textColor = [40, 167, 69];
           }
         }
+        
+        // Color naranja para "Sí" en columna Importante
+        if (data.column.index === 7 && item?.importante) {
+          data.cell.styles.textColor = [245, 158, 11];
+          data.cell.styles.fontStyle = 'bold';
+        }
       }
     },
     didDrawCell: (data) => {
-      // Solo cambiar el color del texto "Sí" en la columna Importante
-      if (data.section === 'body' && data.column.index === 7) {
+      // Redibujar fondo amarillo si es necesario
+      if (data.section === 'body') {
         const item = items[data.row.index];
-        if (item?.importante && data.cell.text[0] === 'Sí') {
-          doc.setTextColor(245, 158, 11);
-          doc.setFont(undefined, 'bold');
-          doc.text('Sí', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-          doc.setFont(undefined, 'normal');
+        if (item?.importante) {
+          doc.setFillColor(255, 255, 204);
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+          
+          // Redibujar el texto encima del fondo
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(8);
+          
+          // Para la columna de Stock con colores especiales
+          if (data.column.index === 3) {
+            const stock = parseInt(data.cell.raw);
+            const umbral = item?.umbral_low || 5;
+            
+            if (stock === 0) {
+              doc.setTextColor(220, 53, 69);
+              doc.setFont(undefined, 'bold');
+            } else if (stock <= umbral) {
+              doc.setTextColor(255, 193, 7);
+              doc.setFont(undefined, 'bold');
+            } else {
+              doc.setTextColor(40, 167, 69);
+              doc.setFont(undefined, 'normal');
+            }
+            doc.text(data.cell.raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+          }
+          // Para la columna Importante
+          else if (data.column.index === 7) {
+            doc.setTextColor(245, 158, 11);
+            doc.setFont(undefined, 'bold');
+            doc.text(data.cell.text[0], data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+          }
+          // Para las demás columnas
+          else {
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            const align = data.column.dataKey === 5 || data.column.dataKey === 6 ? 'right' : 
+                         data.column.dataKey === 3 || data.column.dataKey === 4 ? 'center' : 'left';
+            const xPos = align === 'right' ? data.cell.x + data.cell.width - 3 :
+                        align === 'center' ? data.cell.x + data.cell.width / 2 :
+                        data.cell.x + 3;
+            doc.text(data.cell.text[0], xPos, data.cell.y + data.cell.height / 2 + 2, { align: align });
+          }
         }
       }
     }
@@ -275,7 +322,7 @@ const generateCategoryPDF = (doc, items, title, subtitle) => {
     );
     currentY += 15;
 
-    // Tabla de productos CON MARCA
+    // Tabla de productos
     const tableData = categoryItems.map(item => [
       item.nombre || '',
       item.marca || '-',
@@ -308,23 +355,78 @@ const generateCategoryPDF = (doc, items, title, subtitle) => {
       },
       margin: { left: 14, right: 14 },
       willDrawCell: (data) => {
-        // Aplicar fondo amarillo ANTES de que se dibuje la celda
         if (data.section === 'body') {
           const item = categoryItems[data.row.index];
+          
+          // Fondo amarillo para productos importantes
           if (item?.importante) {
-            data.cell.styles.fillColor = [255, 250, 205];
+            data.cell.styles.fillColor = [255, 255, 204];
+          }
+          
+          // Color del texto en columna Stock
+          if (data.column.index === 2) {
+            const stock = parseInt(data.cell.raw);
+            const umbral = item?.umbral_low || 5;
+            
+            if (stock === 0) {
+              data.cell.styles.textColor = [220, 53, 69];
+              data.cell.styles.fontStyle = 'bold';
+            } else if (stock <= umbral) {
+              data.cell.styles.textColor = [255, 193, 7];
+              data.cell.styles.fontStyle = 'bold';
+            } else {
+              data.cell.styles.textColor = [40, 167, 69];
+            }
+          }
+          
+          // Color naranja para "Sí" en columna Importante
+          if (data.column.index === 6 && item?.importante) {
+            data.cell.styles.textColor = [245, 158, 11];
+            data.cell.styles.fontStyle = 'bold';
           }
         }
       },
       didDrawCell: (data) => {
-        // Solo cambiar el color del texto "Sí" en la columna Importante
-        if (data.section === 'body' && data.column.index === 6) {
+        if (data.section === 'body') {
           const item = categoryItems[data.row.index];
-          if (item?.importante && data.cell.text[0] === 'Sí') {
-            doc.setTextColor(245, 158, 11);
-            doc.setFont(undefined, 'bold');
-            doc.text('Sí', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-            doc.setFont(undefined, 'normal');
+          if (item?.importante) {
+            doc.setFillColor(255, 255, 204);
+            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(8);
+            
+            if (data.column.index === 2) {
+              const stock = parseInt(data.cell.raw);
+              const umbral = item?.umbral_low || 5;
+              
+              if (stock === 0) {
+                doc.setTextColor(220, 53, 69);
+                doc.setFont(undefined, 'bold');
+              } else if (stock <= umbral) {
+                doc.setTextColor(255, 193, 7);
+                doc.setFont(undefined, 'bold');
+              } else {
+                doc.setTextColor(40, 167, 69);
+                doc.setFont(undefined, 'normal');
+              }
+              doc.text(data.cell.raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            }
+            else if (data.column.index === 6) {
+              doc.setTextColor(245, 158, 11);
+              doc.setFont(undefined, 'bold');
+              doc.text(data.cell.text[0], data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            }
+            else {
+              doc.setTextColor(0, 0, 0);
+              doc.setFont(undefined, 'normal');
+              const align = data.column.index === 4 || data.column.index === 5 ? 'right' : 
+                           data.column.index === 2 || data.column.index === 3 ? 'center' : 'left';
+              const xPos = align === 'right' ? data.cell.x + data.cell.width - 3 :
+                          align === 'center' ? data.cell.x + data.cell.width / 2 :
+                          data.cell.x + 3;
+              doc.text(data.cell.text[0], xPos, data.cell.y + data.cell.height / 2 + 2, { align: align });
+            }
           }
         }
       }
@@ -414,7 +516,7 @@ const generateProviderPDF = (doc, items, providers, title, subtitle) => {
       }
     }
 
-    // Tabla de productos CON MARCA
+    // Tabla de productos
     const tableData = providerItems.map(item => [
       item.nombre || '',
       item.marca || '-',
@@ -432,36 +534,93 @@ const generateProviderPDF = (doc, items, providers, title, subtitle) => {
       headStyles: { 
         fillColor: [220, 53, 69],
         textColor: 255,
-        fontSize: 9
+        fontSize: 9,
+        halign: 'center'
       },
-      styles: { fontSize: 8 },
+      styles: { 
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak'
+      },
       columnStyles: {
-        0: { cellWidth: 50 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 22 },
+        0: { cellWidth: 45, halign: 'left' },
+        1: { cellWidth: 35, halign: 'left' },
+        2: { cellWidth: 22, halign: 'center' },
         3: { cellWidth: 20, halign: 'center' },
         4: { cellWidth: 20, halign: 'center' },
-        5: { cellWidth: 12, halign: 'center' }
+        5: { cellWidth: 15, halign: 'center' }
       },
+      margin: { left: 14, right: 14 },
       willDrawCell: (data) => {
-        // Aplicar fondo amarillo ANTES de que se dibuje la celda
         if (data.section === 'body') {
           const item = providerItems[data.row.index];
+          
+          // Fondo amarillo para productos importantes
           if (item?.importante) {
-            data.cell.styles.fillColor = [255, 250, 205];
+            data.cell.styles.fillColor = [255, 255, 204];
+          }
+          
+          // Color del texto en columna Stock Actual
+          if (data.column.index === 3) {
+            const stock = parseInt(data.cell.raw);
+            const umbral = item?.umbral_low || 5;
+            
+            if (stock === 0) {
+              data.cell.styles.textColor = [220, 53, 69];
+              data.cell.styles.fontStyle = 'bold';
+            } else if (stock <= umbral) {
+              data.cell.styles.textColor = [255, 193, 7];
+              data.cell.styles.fontStyle = 'bold';
+            } else {
+              data.cell.styles.textColor = [40, 167, 69];
+            }
+          }
+          
+          // Color naranja para "Sí" en columna Importante
+          if (data.column.index === 5 && item?.importante) {
+            data.cell.styles.textColor = [245, 158, 11];
+            data.cell.styles.fontStyle = 'bold';
           }
         }
       },
       didDrawCell: (data) => {
-        // Solo cambiar el color del texto "Sí" en la columna Importante
-        if (data.section === 'body' && data.column.index === 5) {
+        if (data.section === 'body') {
           const item = providerItems[data.row.index];
-          if (item?.importante && data.cell.text[0] === 'Sí') {
-            // Redibujar solo el "Sí" en naranja
-            doc.setTextColor(245, 158, 11);
-            doc.setFont(undefined, 'bold');
-            doc.text('Sí', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
-            doc.setFont(undefined, 'normal');
+          if (item?.importante) {
+            doc.setFillColor(255, 255, 204);
+            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(8);
+            
+            if (data.column.index === 3) {
+              const stock = parseInt(data.cell.raw);
+              const umbral = item?.umbral_low || 5;
+              
+              if (stock === 0) {
+                doc.setTextColor(220, 53, 69);
+                doc.setFont(undefined, 'bold');
+              } else if (stock <= umbral) {
+                doc.setTextColor(255, 193, 7);
+                doc.setFont(undefined, 'bold');
+              } else {
+                doc.setTextColor(40, 167, 69);
+                doc.setFont(undefined, 'normal');
+              }
+              doc.text(data.cell.raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            }
+            else if (data.column.index === 5) {
+              doc.setTextColor(245, 158, 11);
+              doc.setFont(undefined, 'bold');
+              doc.text(data.cell.text[0], data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align: 'center' });
+            }
+            else {
+              doc.setTextColor(0, 0, 0);
+              doc.setFont(undefined, 'normal');
+              const align = data.column.index === 3 || data.column.index === 4 ? 'center' : 'left';
+              const xPos = align === 'center' ? data.cell.x + data.cell.width / 2 : data.cell.x + 3;
+              doc.text(data.cell.text[0], xPos, data.cell.y + data.cell.height / 2 + 2, { align: align });
+            }
           }
         }
       }
@@ -530,7 +689,7 @@ const generateValuationPDF = (doc, items, title, subtitle) => {
 
   currentY += 50;
 
-  // Top 10 productos CON MARCA
+  // Top 10 productos
   const topProducts = [...items]
     .sort((a, b) => ((b.precio_venta || 0) * (b.stock || 0)) - ((a.precio_venta || 0) * (a.stock || 0)))
     .slice(0, 10);
@@ -567,6 +726,36 @@ const generateValuationPDF = (doc, items, title, subtitle) => {
       3: { cellWidth: 18, halign: 'center' },
       4: { cellWidth: 25, halign: 'right' },
       5: { cellWidth: 30, halign: 'right' }
+    },
+    willDrawCell: (data) => {
+      if (data.section === 'body') {
+        const item = topProducts[data.row.index];
+        
+        // Fondo amarillo para productos importantes
+        if (item?.importante) {
+          data.cell.styles.fillColor = [255, 255, 204];
+        }
+      }
+    },
+    didDrawCell: (data) => {
+      if (data.section === 'body') {
+        const item = topProducts[data.row.index];
+        if (item?.importante) {
+          doc.setFillColor(255, 255, 204);
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+          
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(8);
+          doc.setFont(undefined, 'normal');
+          
+          const align = data.column.index === 0 || data.column.index === 3 ? 'center' :
+                       data.column.index === 4 || data.column.index === 5 ? 'right' : 'left';
+          const xPos = align === 'right' ? data.cell.x + data.cell.width - 3 :
+                      align === 'center' ? data.cell.x + data.cell.width / 2 :
+                      data.cell.x + 3;
+          doc.text(data.cell.text[0], xPos, data.cell.y + data.cell.height / 2 + 2, { align: align });
+        }
+      }
     }
   });
 
