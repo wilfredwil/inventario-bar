@@ -214,6 +214,31 @@ body.dark-mode .nav-link.active {
   padding-right: var(--spacing-mobile);
 }
 
+/* ===== TEXT UTILITIES - MODO OSCURO ===== */
+body.dark-mode .text-muted {
+  color: var(--text-secondary) !important;
+}
+
+body.dark-mode .text-primary {
+  color: var(--primary-color) !important;
+}
+
+body.dark-mode .text-warning {
+  color: var(--warning-color) !important;
+}
+
+body.dark-mode .text-danger {
+  color: var(--danger-color) !important;
+}
+
+body.dark-mode .text-info {
+  color: var(--info-color) !important;
+}
+
+body.dark-mode .text-success {
+  color: var(--success-color) !important;
+}
+
 /* ===== CARDS MOBILE FIRST ===== */
 .card {
   background: var(--bg-primary);
@@ -289,6 +314,15 @@ body.dark-mode .card-header {
   color: var(--text-primary);
 }
 
+/* CORRECCIÓN: Fondo oscuro para las filas en modo oscuro */
+body.dark-mode .table tbody tr {
+  background: var(--bg-primary) !important;
+}
+
+body.dark-mode .table tbody tr:hover {
+  background: var(--bg-tertiary) !important;
+}
+
 /* CORRECCIÓN: Forzar color de texto en modo oscuro */
 body.dark-mode .table tbody td,
 body.dark-mode .table tbody td *,
@@ -306,10 +340,6 @@ body.dark-mode .table tbody td small.text-muted {
 
 .table tbody tr:hover {
   background: var(--bg-secondary);
-}
-
-body.dark-mode .table-hover tbody tr:hover {
-  background: var(--bg-tertiary);
 }
 
 /* CORRECCIÓN: Más espacio para la primera columna (estrella) */

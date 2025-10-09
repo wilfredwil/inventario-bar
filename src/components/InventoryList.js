@@ -378,7 +378,7 @@ function InventoryList({ inventory, user, userRole, providers }) {
                       filteredInventory.map(item => {
                         const provider = providers.find(p => p.id === item.proveedor_id);
                         return (
-                          <tr key={item.id} className={item.importante ? 'important-product' : ''} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                          <tr key={item.id} className={item.importante ? 'important-product' : ''} style={{ borderBottom: '1px solid var(--border-light)', backgroundColor: 'var(--bg-primary)' }}>
                             <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               <Button
                                 variant="link"
