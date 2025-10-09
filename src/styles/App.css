@@ -214,6 +214,39 @@ body.dark-mode .nav-link.active {
   padding-right: var(--spacing-mobile);
 }
 
+/* ===== CARDS DE ESTADÍSTICAS EN MODO OSCURO ===== */
+body.dark-mode .card-header.bg-white {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Sobrescribir fondos inline de las cards de alertas */
+body.dark-mode .d-flex.rounded {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Asegurar que los textos dentro sean visibles */
+body.dark-mode .d-flex.rounded h3,
+body.dark-mode .d-flex.rounded small,
+body.dark-mode .d-flex.rounded .text-danger,
+body.dark-mode .d-flex.rounded .text-warning,
+body.dark-mode .d-flex.rounded .text-info {
+  color: var(--text-primary) !important;
+}
+
+/* Mantener los iconos con sus colores originales */
+body.dark-mode .d-flex.rounded .text-danger {
+  color: var(--danger-color) !important;
+}
+
+body.dark-mode .d-flex.rounded .text-warning {
+  color: var(--warning-color) !important;
+}
+
+body.dark-mode .d-flex.rounded .text-info {
+  color: var(--info-color) !important;
+}
+
 /* ===== TEXT UTILITIES - MODO OSCURO ===== */
 body.dark-mode .text-muted {
   color: var(--text-secondary) !important;
@@ -314,13 +347,21 @@ body.dark-mode .card-header {
   color: var(--text-primary);
 }
 
-/* CORRECCIÓN: Fondo oscuro para las filas en modo oscuro */
-body.dark-mode .table tbody tr {
-  background: var(--bg-primary) !important;
+/* CORRECCIÓN: Fondo oscuro para las filas en modo oscuro - MÁS AGRESIVO */
+body.dark-mode .table tbody tr,
+body.dark-mode .table tbody tr td {
+  background-color: var(--bg-primary) !important;
 }
 
-body.dark-mode .table tbody tr:hover {
-  background: var(--bg-tertiary) !important;
+body.dark-mode .table tbody tr:hover,
+body.dark-mode .table tbody tr:hover td {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Excepción para productos importantes */
+body.dark-mode .important-product,
+body.dark-mode .important-product td {
+  background: rgba(251, 191, 36, 0.15) !important;
 }
 
 /* CORRECCIÓN: Forzar color de texto en modo oscuro */
@@ -377,6 +418,16 @@ body.dark-mode .badge.bg-danger {
 body.dark-mode .badge.bg-info {
   background-color: var(--info-color) !important;
   color: #0f172a;
+}
+
+/* NUEVO: Badges light en modo oscuro */
+body.dark-mode .badge.bg-light {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+body.dark-mode .badge.text-dark {
+  color: var(--text-primary) !important;
 }
 
 /* ===== ALERTS ===== */
