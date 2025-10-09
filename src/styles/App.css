@@ -77,7 +77,7 @@ body.dark-mode {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* TRANSICIÓN GLOBAL FORZADA */
+/* TRANSICIÓN BALANCEADA Y PROFESIONAL - OPCIÓN 4 */
 *,
 *::before,
 *::after,
@@ -89,6 +89,8 @@ body,
 .card *,
 .table,
 .table *,
+.table tbody tr,
+.table tbody td,
 .btn,
 .form-control,
 .form-select,
@@ -96,11 +98,26 @@ body,
 .modal-content *,
 .badge,
 .alert,
-.dropdown-menu {
-  transition: background-color 0.3s ease, 
-              color 0.3s ease, 
-              border-color 0.3s ease,
-              box-shadow 0.3s ease !important;
+.dropdown-menu,
+h1, h2, h3, h4, h5, h6,
+p, span, div, small,
+.text-primary,
+.text-secondary,
+.text-muted,
+.text-warning,
+.text-danger,
+.text-info,
+.text-success,
+.bg-white,
+.bg-light,
+.bg-dark,
+.rounded {
+  transition: background-color 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), 
+              color 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), 
+              border-color 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              box-shadow 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              fill 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              stroke 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
 }
 
 body {
