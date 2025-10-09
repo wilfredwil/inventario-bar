@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { Container, Navbar, Nav, Button, Spinner } from 'react-bootstrap';
+import { FaMoon, FaSun } from 'react-icons/fa';
 import Login from './components/Login';
 import InventoryList from './components/InventoryList';
 import Statistics from './components/Statistics';
@@ -20,6 +21,23 @@ function App() {
   const [activeView, setActiveView] = useState('inventory');
   const [inventory, setInventory] = useState([]);
   const [providers, setProviders] = useState([]);
+  
+  // Estado para modo oscuro
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) return saved === 'true';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  // Aplicar modo oscuro al body
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    localStorage.setItem('darkMode', darkMode);
+  }, [darkMode]);
 
   // Listener de autenticación
   useEffect(() => {
@@ -47,21 +65,29 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Cargar inventario del bar
+  // Listener del inventario - USANDO EL MISMO FILTRO QUE TU CÓDIGO ORIGINAL
   useEffect(() => {
     if (!user) return;
 
     const inventoryRef = collection(db, 'inventario');
-    const q = query(inventoryRef, orderBy('nombre'));
+    const q = query(inventoryRef);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(item => {
+          // Filtro igual al de tu código original
           const tipo = (item.tipo_inventario || '').toLowerCase();
           return tipo === 'bar' || 
                  ['licor', 'vino', 'cerveza', 'whisky', 'vodka', 'gin', 'ron', 'tequila'].includes(item.tipo?.toLowerCase());
         });
+      
+      // Ordenar alfabéticamente por nombre
+      items.sort((a, b) => {
+        const nameA = (a.nombre || '').toLowerCase();
+        const nameB = (b.nombre || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
       
       setInventory(items);
     });
@@ -69,16 +95,17 @@ function App() {
     return () => unsubscribe();
   }, [user]);
 
-  // Cargar proveedores
+  // Listener de proveedores
   useEffect(() => {
     if (!user) return;
 
     const loadProviders = async () => {
       try {
+        // IMPORTANTE: La colección se llama 'providers' NO 'proveedores'
         const providersRef = collection(db, 'providers');
         const snapshot = await getDocs(providersRef);
         
-        const providersData = snapshot.docs
+        const providersList = snapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter(p => {
             // Aceptar tanto 'empresa' como 'nombre' (compatibilidad)
@@ -91,8 +118,8 @@ function App() {
             return nameA.localeCompare(nameB);
           });
         
-        console.log('✅ Proveedores cargados:', providersData.length);
-        setProviders(providersData);
+        console.log('✅ Proveedores cargados:', providersList.length);
+        setProviders(providersList);
       } catch (error) {
         console.error('❌ Error cargando proveedores:', error);
       }
@@ -109,6 +136,10 @@ function App() {
     }
   };
 
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
@@ -123,7 +154,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
+      <Navbar bg={darkMode ? "dark" : "light"} variant={darkMode ? "dark" : "light"} expand="lg" className="mb-4">
         <Container fluid>
           <Navbar.Brand>🍸 Inventario de Bar</Navbar.Brand>
           <Navbar.Toggle aria-controls="navbar-nav" />
@@ -167,10 +198,21 @@ function App() {
               )}
             </Nav>
             <Nav>
+              {/* Toggle para modo oscuro */}
+              <Button 
+                variant={darkMode ? "outline-light" : "outline-dark"}
+                size="sm" 
+                onClick={toggleDarkMode}
+                className="me-3"
+                title={darkMode ? "Activar modo claro" : "Activar modo oscuro"}
+              >
+                {darkMode ? <FaSun /> : <FaMoon />}
+              </Button>
+              
               <Navbar.Text className="me-3">
                 {user.email} ({userRole})
               </Navbar.Text>
-              <Button variant="outline-light" size="sm" onClick={handleLogout}>
+              <Button variant="outline-danger" size="sm" onClick={handleLogout}>
                 Cerrar Sesión
               </Button>
             </Nav>
