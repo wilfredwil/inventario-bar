@@ -1,70 +1,275 @@
-# Getting Started with Create React App
+# 🍸 Sistema de Inventario de Bar
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/tu-usuario/inventario-bar/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-18-61dafb.svg)](https://reactjs.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-orange.svg)](https://firebase.google.com/)
 
-## Available Scripts
+Sistema completo y profesional de gestión de inventario para bares con modo oscuro, escaneo de códigos de barras y reportes PDF.
 
-In the project directory, you can run:
+## ✨ Características Principales
 
-### `npm start`
+### 📦 Gestión de Inventario
+- ✅ CRUD completo de productos (Crear, Leer, Actualizar, Eliminar)
+- ✅ Control de stock en tiempo real con actualización rápida
+- ✅ Categorización por tipo de bebida (Licor, Vino, Cerveza, Whisky, Vodka, Gin, Ron, Tequila)
+- ✅ Sistema de productos importantes con marcador de estrella
+- ✅ Alertas automáticas de stock bajo y sin stock
+- ✅ Umbral de stock personalizable por producto
+- ✅ Drag & drop para reordenar productos
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 📱 Escaneo de Códigos de Barras
+- Escaneo mediante cámara en tiempo real
+- Captura de foto para mejor precisión
+- Ingreso manual de códigos
+- Búsqueda instantánea por código de barras
+- Compatible con dispositivos móviles
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 📊 Estadísticas y Análisis
+- Dashboard interactivo con métricas clave
+- Gráficos de pastel para distribución de stock
+- Gráficos de barras por categoría
+- Top 10 productos más valiosos
+- Análisis de productos críticos
+- Valor total del inventario y ganancias potenciales
 
-### `npm test`
+### 📄 Reportes PDF Profesionales
+- Inventario completo
+- Productos con stock bajo
+- Productos sin stock
+- Stock crítico
+- Por categoría
+- Por proveedor
+- Valoración económica
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 👥 Sistema de Usuarios y Roles
+- **Admin**: Acceso total al sistema
+- **Manager**: Gestión de inventario y proveedores
+- **Bartender**: Solo gestión de inventario
 
-### `npm run build`
+### 🏢 Gestión de Proveedores
+- Base de datos completa de proveedores
+- Información de contacto
+- Historial de productos por proveedor
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 📜 Historial Completo
+- Registro de todas las acciones
+- Filtros por tipo de acción y usuario
+- Seguimiento de cambios de stock
+- Auditoría completa del sistema
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 🌗 Modo Oscuro Profesional
+- Transición suave y elegante (0.35s cubic-bezier)
+- Diseño cuidado para cada elemento
+- Guarda la preferencia del usuario
+- Optimizado para uso prolongado
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 📱 Responsive Design
+- Vista móvil optimizada
+- Vista de escritorio completa
+- Adaptable a cualquier dispositivo
+- Touch-friendly para tablets
 
-### `npm run eject`
+## 🎨 Interfaz de Usuario
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- Diseño moderno y profesional
+- Transiciones suaves y fluidas
+- Iconos intuitivos
+- Colores bien contrastados
+- Accesible y fácil de usar
+- Feedback visual en todas las acciones
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🛠️ Tecnologías Utilizadas
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Frontend
+- **React 18** - Framework principal
+- **React Hooks** - Gestión de estado
+- **Bootstrap 5** - Framework CSS
+- **React Bootstrap** - Componentes UI
+- **React Icons** - Iconografía
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Backend & Base de Datos
+- **Firebase Authentication** - Autenticación de usuarios
+- **Cloud Firestore** - Base de datos NoSQL en tiempo real
+- **Firebase Hosting** - (Opcional para deploy)
 
-## Learn More
+### Librerías Especiales
+- **Html5-qrcode** - Escaneo de códigos de barras
+- **Recharts** - Gráficos interactivos
+- **jsPDF** - Generación de reportes PDF
+- **jsPDF-AutoTable** - Tablas en PDFs
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 📦 Instalación
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Prerrequisitos
+- Node.js (v14 o superior)
+- npm o yarn
+- Cuenta de Firebase
 
-### Code Splitting
+### Pasos de Instalación
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+1. **Clonar el repositorio**
+```bash
+git clone https://github.com/tu-usuario/inventario-bar.git
+cd inventario-bar
+```
 
-### Analyzing the Bundle Size
+2. **Instalar dependencias**
+```bash
+npm install
+# o
+yarn install
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+3. **Configurar Firebase**
+   - Crea un proyecto en [Firebase Console](https://console.firebase.google.com/)
+   - Habilita Authentication (Email/Password)
+   - Crea una base de datos Firestore
+   - Copia las credenciales de configuración
 
-### Making a Progressive Web App
+4. **Configurar variables de entorno**
+   
+Crea un archivo `src/firebase.js` con tu configuración:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```javascript
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-### Advanced Configuration
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_AUTH_DOMAIN",
+  projectId: "TU_PROJECT_ID",
+  storageBucket: "TU_STORAGE_BUCKET",
+  messagingSenderId: "TU_MESSAGING_SENDER_ID",
+  appId: "TU_APP_ID"
+};
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+```
 
-### Deployment
+5. **Iniciar la aplicación**
+```bash
+npm start
+# o
+yarn start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+6. **Abrir en el navegador**
+   - La app se abrirá automáticamente en `http://localhost:3000`
 
-### `npm run build` fails to minify
+## 🔐 Configuración de Firestore
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Colecciones necesarias:
+- `inventario` - Productos del inventario
+- `users` - Usuarios del sistema
+- `providers` - Proveedores
+- `historial` - Registro de cambios
+
+### Reglas de seguridad sugeridas:
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null;
+    }
+    match /inventario/{itemId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /providers/{providerId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /historial/{historyId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+  }
+}
+```
+
+## 📖 Uso del Sistema
+
+### Primer Uso
+1. Crear un usuario administrador manualmente en Firebase Authentication
+2. Agregar el rol de admin en la colección `users`
+3. Iniciar sesión con ese usuario
+4. Agregar proveedores
+5. Comenzar a agregar productos
+
+### Gestión de Productos
+- Click en "Agregar Producto" para crear nuevos productos
+- Usa el escáner de códigos para asignar códigos de barras
+- Actualiza el stock directamente desde la tabla
+- Marca productos importantes con la estrella
+
+### Reportes
+- Accede al menú "Reportes PDF"
+- Selecciona el tipo de reporte que necesitas
+- El PDF se generará y descargará automáticamente
+
+## 🚀 Deploy
+
+### Deploy en Firebase Hosting
+
+```bash
+# Instalar Firebase CLI
+npm install -g firebase-tools
+
+# Login a Firebase
+firebase login
+
+# Inicializar Firebase
+firebase init
+
+# Build de producción
+npm run build
+
+# Deploy
+firebase deploy
+```
+
+## 🤝 Contribuir
+
+Las contribuciones son bienvenidas. Por favor:
+
+1. Haz Fork del proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📝 Changelog
+
+### [1.0.0] - 2025-01-XX
+- 🎉 Release inicial
+- ✅ Sistema completo de inventario
+- ✅ Modo oscuro profesional
+- ✅ Escaneo de códigos de barras
+- ✅ Reportes PDF
+- ✅ Sistema de usuarios
+- ✅ Estadísticas y gráficos
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 👤 Autor
+
+Wilfred Del Pozo - [[@wilfredwil](https://github.com/wilfredwil)
+Link del Proyecto: (https://github.com/wilfredwil/inventario-bar)
+## 🙏 Agradecimientos
+
+- [React](https://reactjs.org/)
+- [Firebase](https://firebase.google.com/)
+- [Bootstrap](https://getbootstrap.com/)
+- [Recharts](https://recharts.org/)
+- [Html5-qrcode](https://github.com/mebjas/html5-qrcode)
+
+---
+
+⭐ Si te gusta este proyecto, dale una estrella en GitHub!
