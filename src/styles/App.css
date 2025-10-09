@@ -275,7 +275,7 @@ body.dark-mode .card-header {
   font-size: 0.6875rem;
   letter-spacing: 0.5px;
   border-bottom: 2px solid var(--border-medium);
-  padding: 0.875rem;
+  padding: 1rem 1.25rem;
   white-space: nowrap;
   position: sticky;
   top: 0;
@@ -283,7 +283,7 @@ body.dark-mode .card-header {
 }
 
 .table tbody td {
-  padding: 0.875rem;
+  padding: 1rem 1.25rem;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-primary);
@@ -509,6 +509,11 @@ body.dark-mode .important-product {
 
 body.dark-mode .login-container {
   background: linear-gradient(135deg, #4338ca 0%, #6b21a8 100%);
+}
+.table thead th:first-child,
+.table tbody td:first-child {
+  padding-left: 1.5rem;  /* Más espacio a la izquierda */
+  width: 70px;  /* Ancho mínimo para la columna de estrella */
 }
 
 /* ===== RESPONSIVE TABLET Y DESKTOP ===== */

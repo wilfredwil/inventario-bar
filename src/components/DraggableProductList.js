@@ -80,14 +80,14 @@ function DraggableProductList({
       <Table hover className="mb-0">
         <thead className="table-light">
           <tr>
-            <th style={{ width: '30px' }}></th>
-            <th style={{ width: '40px' }}></th>
-            <th>Producto</th>
-            <th>Categoría</th>
-            <th className="text-center">Stock</th>
-            <th>Proveedor</th>
-            <th className="text-center">Estado</th>
-            <th className="text-end">Acciones</th>
+            <th style={{ width: '50px', padding: '1rem 0.75rem' }}></th>
+            <th style={{ width: '60px', padding: '1rem 1rem' }}></th>
+            <th style={{ padding: '1rem 1.25rem' }}>Producto</th>
+            <th style={{ padding: '1rem 1.25rem' }}>Categoría</th>
+            <th className="text-center" style={{ padding: '1rem 1.25rem' }}>Stock</th>
+            <th style={{ padding: '1rem 1.25rem' }}>Proveedor</th>
+            <th className="text-center" style={{ padding: '1rem 1.25rem' }}>Estado</th>
+            <th className="text-end" style={{ padding: '1rem 1.25rem' }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -119,7 +119,7 @@ function DraggableProductList({
                   }}
                 >
                   {/* Handle para arrastrar */}
-                  <td className="text-center drag-handle">
+                  <td className="text-center drag-handle" style={{ padding: '1rem 0.75rem' }}>
                     <FaGripVertical 
                       className="text-muted" 
                       style={{ cursor: 'grab' }}
@@ -128,7 +128,7 @@ function DraggableProductList({
                   </td>
 
                   {/* Estrella importante */}
-                  <td className="text-center">
+                  <td className="text-center" style={{ padding: '1rem 1rem' }}>
                     <Button
                       variant="link"
                       size="sm"
@@ -143,7 +143,7 @@ function DraggableProductList({
                   </td>
 
                   {/* Producto */}
-                  <td>
+                  <td style={{ padding: '1rem 1.25rem' }}>
                     <div>
                       <strong>{item.marca ? `${item.marca} - ` : ''}{item.nombre}</strong>
                     </div>
@@ -155,14 +155,14 @@ function DraggableProductList({
                   </td>
 
                   {/* Categoría */}
-                  <td>
+                  <td style={{ padding: '1rem 1.25rem' }}>
                     <Badge bg="secondary">
                       {item.tipo ? item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1) : 'N/A'}
                     </Badge>
                   </td>
 
                   {/* Stock */}
-                  <td className="text-center">
+                  <td className="text-center" style={{ padding: '1rem 1.25rem' }}>
                     <strong 
                       style={{ 
                         color: item.stock === 0 ? '#dc3545' : 
@@ -175,7 +175,7 @@ function DraggableProductList({
                   </td>
 
                   {/* Proveedor */}
-                  <td>
+                  <td style={{ padding: '1rem 1.25rem' }}>
                     {provider ? (
                       <small>{provider.nombre}</small>
                     ) : (
@@ -184,12 +184,12 @@ function DraggableProductList({
                   </td>
 
                   {/* Estado */}
-                  <td className="text-center">
+                  <td className="text-center" style={{ padding: '1rem 1.25rem' }}>
                     {getStockBadge(item)}
                   </td>
 
                   {/* Acciones */}
-                  <td className="text-end">
+                  <td className="text-end" style={{ padding: '1rem 1.25rem' }}>
                     <ButtonGroup size="sm">
                       <Button 
                         variant="outline-primary" 
