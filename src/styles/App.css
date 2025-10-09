@@ -258,7 +258,7 @@ body.dark-mode .card-header {
 /* ===== TABLA MOBILE FIRST ===== */
 .table-responsive {
   -webkit-overflow-scrolling: touch;
-  margin: 0 -1.25rem;
+  margin: 0;
 }
 
 .table {
@@ -289,12 +289,34 @@ body.dark-mode .card-header {
   color: var(--text-primary);
 }
 
+/* CORRECCIÓN: Forzar color de texto en modo oscuro */
+body.dark-mode .table tbody td,
+body.dark-mode .table tbody td *,
+body.dark-mode .table tbody td strong,
+body.dark-mode .table tbody td small:not(.text-muted),
+body.dark-mode .table tbody td div {
+  color: var(--text-primary) !important;
+}
+
+/* Excepción para textos con clases de color específicas */
+body.dark-mode .table tbody td .text-muted,
+body.dark-mode .table tbody td small.text-muted {
+  color: var(--text-secondary) !important;
+}
+
 .table tbody tr:hover {
   background: var(--bg-secondary);
 }
 
 body.dark-mode .table-hover tbody tr:hover {
   background: var(--bg-tertiary);
+}
+
+/* CORRECCIÓN: Más espacio para la primera columna (estrella) */
+.table thead th:first-child,
+.table tbody td:first-child {
+  padding-left: 1.5rem;
+  width: 70px;
 }
 
 /* ===== BADGES ===== */
@@ -509,11 +531,6 @@ body.dark-mode .important-product {
 
 body.dark-mode .login-container {
   background: linear-gradient(135deg, #4338ca 0%, #6b21a8 100%);
-}
-.table thead th:first-child,
-.table tbody td:first-child {
-  padding-left: 1.5rem;  /* Más espacio a la izquierda */
-  width: 70px;  /* Ancho mínimo para la columna de estrella */
 }
 
 /* ===== RESPONSIVE TABLET Y DESKTOP ===== */

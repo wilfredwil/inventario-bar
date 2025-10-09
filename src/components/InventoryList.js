@@ -395,7 +395,7 @@ function InventoryList({ inventory, user, userRole, providers }) {
                             </td>
                             <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               <div>
-                                <strong style={{ fontSize: '0.95rem' }}>
+                                <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                                   {item.marca ? `${item.marca} - ` : ''}{item.nombre}
                                 </strong>
                               </div>
