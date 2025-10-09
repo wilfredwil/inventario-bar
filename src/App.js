@@ -11,6 +11,7 @@ import Statistics from './components/Statistics';
 import UserManagement from './components/UserManagement';
 import ProviderManagement from './components/ProviderManagement';
 import HistoryLog from './components/HistoryLog';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { ToastProvider } from './components/ToastNotification';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/App.css';

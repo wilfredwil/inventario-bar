@@ -1,12 +1,11 @@
-// Service Worker para PWA - Inventario de Bar
-const CACHE_NAME = 'inventario-bar-v1.0.0';
+// public/service-worker.js
+const CACHE_NAME = 'inventario-bar-v1';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/js/main.chunk.js',
-  '/static/js/0.chunk.js',
+  '/index.html',
+  '/static/css/main.css',
+  '/static/js/main.js',
   '/manifest.json',
-  '/favicon.ico'
 ];
 
 // Instalación del Service Worker
@@ -16,13 +15,9 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('📦 Cache abierto');
-        return cache.addAll(urlsToCache.map(url => new Request(url, {cache: 'reload'})));
-      })
-      .catch((error) => {
-        console.log('❌ Error al cachear:', error);
+        return cache.addAll(urlsToCache);
       })
   );
-  self.skipWaiting();
 });
 
 // Activación del Service Worker
@@ -33,58 +28,90 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('🗑️ Eliminando cache antiguo:', cacheName);
+            console.log('🗑️ Eliminando cache antigua:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     })
   );
-  return self.clients.claim();
 });
 
-// Interceptar peticiones (Fetch)
+// Interceptar peticiones
 self.addEventListener('fetch', (event) => {
-  // Solo cachear peticiones GET
-  if (event.request.method !== 'GET') return;
-  
-  // No cachear peticiones a Firebase
-  if (event.request.url.includes('firebasestorage.googleapis.com') ||
-      event.request.url.includes('firebaseio.com') ||
-      event.request.url.includes('googleapis.com')) {
-    return;
-  }
-
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Cache hit - devolver respuesta del cache
         if (response) {
           return response;
         }
-
-        // Clone la petición
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then((response) => {
-          // Verificar respuesta válida
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Clone la respuesta
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
-        }).catch(() => {
-          // Si falla, mostrar página offline (opcional)
-          return caches.match('/');
-        });
+        return fetch(event.request);
       })
   );
+});
+
+// ===== NOTIFICACIONES PUSH =====
+
+// Escuchar mensajes push de Firebase
+self.addEventListener('push', (event) => {
+  console.log('📬 Notificación push recibida');
+  
+  let notificationData = {
+    title: 'Inventario de Bar',
+    body: 'Nueva actualización',
+    icon: '/logo192.png',
+    badge: '/logo192.png',
+    vibrate: [200, 100, 200],
+    tag: 'inventario-notification',
+    requireInteraction: false
+  };
+
+  // Si viene data en el push
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      notificationData = {
+        ...notificationData,
+        title: data.title || notificationData.title,
+        body: data.body || notificationData.body,
+        icon: data.icon || notificationData.icon,
+        data: data.data || {},
+        tag: data.tag || notificationData.tag
+      };
+    } catch (e) {
+      notificationData.body = event.data.text();
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, notificationData)
+  );
+});
+
+// Manejar clics en las notificaciones
+self.addEventListener('notificationclick', (event) => {
+  console.log('🔔 Click en notificación:', event.notification.tag);
+  
+  event.notification.close();
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Si ya hay una ventana abierta, enfocarla
+        for (let client of clientList) {
+          if (client.url === '/' && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Si no hay ventana abierta, abrir una nueva
+        if (clients.openWindow) {
+          return clients.openWindow('/');
+        }
+      })
+  );
+});
+
+// Manejar cierre de notificaciones
+self.addEventListener('notificationclose', (event) => {
+  console.log('❌ Notificación cerrada:', event.notification.tag);
 });

@@ -9,6 +9,7 @@ import QuickStockMobile from './QuickStockMobile';
 import BarcodeScanner from './BarcodeScanner';
 import { generateInventoryPDF } from '../utils/pdfGenerator';
 import { useToast } from './ToastNotification';
+import NotificationSettings from './NotificationSettings';
 
 function InventoryList({ inventory, user, userRole, providers }) {
   const toast = useToast();
@@ -216,7 +217,10 @@ function InventoryList({ inventory, user, userRole, providers }) {
         <>
           <h2 className="mb-4">📦 Inventario de Bar</h2>
 
-          <Row className="mb-4">
+
+    <NotificationSettings />
+
+        <Row className="mb-4">
             <Col md={3} sm={6} className="mb-3">
               <Card className="text-center">
                 <Card.Body>
