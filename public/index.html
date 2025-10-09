@@ -4,43 +4,29 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    
-    <!-- Theme color para PWA -->
     <meta name="theme-color" content="#6366f1" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
+    <meta name="description" content="Sistema de gestión de inventario para bares con control de stock, reportes y estadísticas en tiempo real" />
     
-    <!-- Descripción -->
-    <meta name="description" content="Sistema profesional de gestión de inventario para bares con modo oscuro y escaneo de códigos" />
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Inventario Bar">
     
-    <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    
-    <!-- Manifest PWA -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
-    <!-- Apple Mobile Web App -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Inventario Bar" />
-    
-    <!-- MS Tiles -->
-    <meta name="msapplication-TileColor" content="#6366f1" />
-    <meta name="msapplication-tap-highlight" content="no" />
-    
-    <!-- Prevent zoom on inputs (iOS) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-    
-    <title>Inventario de Bar - Sistema de Gestión</title>
+    <title>Inventario de Bar</title>
   </head>
   <body>
-    <noscript>Necesitas habilitar JavaScript para ejecutar esta app.</noscript>
+    <noscript>Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript>
     <div id="root"></div>
     
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
+          navigator.serviceWorker.register('%PUBLIC_URL%/service-worker.js')
             .then(registration => {
               console.log('✅ Service Worker registrado:', registration);
             })

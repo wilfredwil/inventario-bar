@@ -1,7 +1,7 @@
 {
   "short_name": "Inventario Bar",
-  "name": "Sistema de Inventario de Bar",
-  "description": "Gestión profesional de inventario para bares con modo oscuro y escaneo de códigos",
+  "name": "Sistema de Inventario para Bar",
+  "description": "Gestión completa de inventario para bares con control de stock, reportes y estadísticas",
   "icons": [
     {
       "src": "favicon.ico",
@@ -12,23 +12,21 @@
       "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#6366f1",
-  "background_color": "#0f172a",
-  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "orientation": "any",
   "categories": ["business", "productivity"],
-  "lang": "es-ES",
-  "dir": "ltr",
-  "scope": "/",
   "prefer_related_applications": false
 }
