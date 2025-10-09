@@ -13,6 +13,7 @@ import ProviderManagement from './components/ProviderManagement';
 import HistoryLog from './components/HistoryLog';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/App.css';
+import { useToast } from './components/ToastNotification';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -38,6 +39,17 @@ function App() {
     }
     localStorage.setItem('darkMode', darkMode);
   }, [darkMode]);
+
+
+  function MiComponente() {
+  const toast = useToast();
+  
+  // Usar notificaciones
+  toast.success('¡Operación exitosa!');
+  toast.error('Error al guardar');
+  toast.warning('Advertencia');
+  toast.info('Información');
+}
 
   // Listener de autenticación
   useEffect(() => {
