@@ -7,9 +7,9 @@ import { db } from '../firebase';
 import ProductModal from './ProductModal';
 import QuickStockMobile from './QuickStockMobile';
 import BarcodeScanner from './BarcodeScanner';
+import NotificationSettings from './NotificationSettings';
 import { generateInventoryPDF } from '../utils/pdfGenerator';
 import { useToast } from './ToastNotification';
-import NotificationSettings from './NotificationSettings';
 
 function InventoryList({ inventory, user, userRole, providers }) {
   const toast = useToast();
@@ -18,7 +18,12 @@ function InventoryList({ inventory, user, userRole, providers }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(() => {
+    // Inicializar como móvil si es PWA instalada o pantalla pequeña
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  window.navigator.standalone === true;
+    return window.innerWidth < 768 || isPWA;
+  });
   const [focusMode, setFocusMode] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [forceDesktopView, setForceDesktopView] = useState(false);
@@ -36,11 +41,18 @@ function InventoryList({ inventory, user, userRole, providers }) {
   ];
 
   React.useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => {
+      // Detectar móvil por ancho de pantalla O si es PWA instalada
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                    window.navigator.standalone === true;
+      const isSmallScreen = window.innerWidth < 768;
+      
+      setIsMobile(isSmallScreen || isPWA);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const filteredInventory = inventory.filter(item => {
@@ -217,10 +229,10 @@ function InventoryList({ inventory, user, userRole, providers }) {
         <>
           <h2 className="mb-4">📦 Inventario de Bar</h2>
 
+          {/* Panel de Notificaciones */}
+          <NotificationSettings />
 
-    <NotificationSettings />
-
-        <Row className="mb-4">
+          <Row className="mb-4">
             <Col md={3} sm={6} className="mb-3">
               <Card className="text-center">
                 <Card.Body>
@@ -400,39 +412,34 @@ function InventoryList({ inventory, user, userRole, providers }) {
                             <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               <div>
                                 <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                                  {item.marca ? `${item.marca} - ` : ''}{item.nombre}
+                                  {item.marca ? `${item.marca} - ${item.nombre}` : item.nombre}
                                 </strong>
+                                {item.codigo_barras && (
+                                  <div>
+                                    <small className="text-muted" style={{ fontSize: '0.8rem' }}>
+                                      {item.codigo_barras}
+                                    </small>
+                                  </div>
+                                )}
                               </div>
-                              {item.codigo_barras && (
-                                <small className="text-muted" style={{ fontSize: '0.8rem' }}>
-                                  📦 {item.codigo_barras}
-                                </small>
-                              )}
                             </td>
                             <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               {getCategoryBadge(item.tipo)}
                             </td>
                             <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                              <Form.Control
+                              <input
                                 type="number"
                                 value={item.stock || 0}
                                 onChange={(e) => handleQuickStockUpdate(item, e.target.value)}
-                                className="stock-input"
-                                style={{ 
-                                  width: '90px',
-                                  textAlign: 'center',
-                                  fontWeight: 'bold',
-                                  color: getStockColor(item),
-                                  fontSize: '1rem',
-                                  padding: '0.5rem',
-                                  margin: '0 auto',
+                                onBlur={(e) => handleQuickStockUpdate(item, e.target.value)}
+                                className="form-control form-control-sm text-center stock-input"
+                                style={{
+                                  width: '80px',
                                   display: 'inline-block',
-                                  backgroundColor: 'transparent',
-                                  border: '2px solid var(--border-light)',
-                                  borderRadius: '8px'
+                                  fontWeight: 'bold',
+                                  color: getStockColor(item)
                                 }}
                                 min="0"
-                                step="0.5"
                               />
                             </td>
                             <td style={{ padding: '1rem', verticalAlign: 'middle' }}>

@@ -109,16 +109,46 @@ export const checkStockAndNotify = async (inventory) => {
 /**
  * Programa verificaciones periódicas de stock
  */
-export const scheduleStockChecks = (inventory, intervalMinutes = 60) => {
-  // Verificación inmediata
-  checkStockAndNotify(inventory);
+export const scheduleStockChecks = (inventory, settings) => {
+  // Limpiar verificaciones previas
+  const existingInterval = localStorage.getItem('stockCheckInterval');
+  if (existingInterval) {
+    clearInterval(parseInt(existingInterval));
+  }
 
-  // Verificaciones periódicas
-  const intervalId = setInterval(() => {
+  if (settings.scheduleType === 'interval') {
+    // Verificación por intervalo (cada X minutos)
     checkStockAndNotify(inventory);
-  }, intervalMinutes * 60 * 1000);
 
-  return intervalId;
+    const intervalId = setInterval(() => {
+      checkStockAndNotify(inventory);
+    }, settings.checkInterval * 60 * 1000);
+
+    localStorage.setItem('stockCheckInterval', intervalId.toString());
+    return intervalId;
+  } else if (settings.scheduleType === 'weekly') {
+    // Verificación semanal programada
+    const checkWeeklySchedule = () => {
+      const now = new Date();
+      const currentDay = now.getDay();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      const [hours, minutes] = settings.weeklyTime.split(':').map(Number);
+      const targetTime = hours * 60 + minutes;
+
+      // Si es el día correcto y la hora está dentro de un margen de 1 minuto
+      if (currentDay === settings.weeklyDay && Math.abs(currentTime - targetTime) <= 1) {
+        console.log('📅 Verificación semanal programada - Ejecutando');
+        checkStockAndNotify(inventory);
+      }
+    };
+
+    // Verificar cada minuto si es el momento de la verificación semanal
+    checkWeeklySchedule(); // Verificar inmediatamente
+    const intervalId = setInterval(checkWeeklySchedule, 60 * 1000);
+
+    localStorage.setItem('stockCheckInterval', intervalId.toString());
+    return intervalId;
+  }
 };
 
 /**
@@ -127,6 +157,7 @@ export const scheduleStockChecks = (inventory, intervalMinutes = 60) => {
 export const cancelStockChecks = (intervalId) => {
   if (intervalId) {
     clearInterval(intervalId);
+    localStorage.removeItem('stockCheckInterval');
   }
 };
 
