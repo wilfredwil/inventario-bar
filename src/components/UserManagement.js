@@ -1,7 +1,7 @@
 // src/components/UserManagement.js
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Alert, Badge } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaUserShield, FaUserTie, FaUser } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaUserShield, FaUserTie, FaUser, FaEye } from 'react-icons/fa';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../firebase';
@@ -22,9 +22,34 @@ function UserManagement({ user, userRole }) {
   });
 
   const roles = [
-    { value: 'admin', label: 'Administrador', icon: FaUserShield, color: 'danger', description: 'Acceso total' },
-    { value: 'manager', label: 'Gerente', icon: FaUserTie, color: 'primary', description: 'Gestión completa' },
-    { value: 'bartender', label: 'Bartender', icon: FaUser, color: 'success', description: 'Solo inventario bar' }
+    { 
+      value: 'admin', 
+      label: 'Administrador', 
+      icon: FaUserShield, 
+      color: 'danger', 
+      description: 'Control total del sistema' 
+    },
+    { 
+      value: 'manager', 
+      label: 'Manager', 
+      icon: FaUserTie, 
+      color: 'primary', 
+      description: 'Gestión completa excepto usuarios' 
+    },
+    { 
+      value: 'bartender', 
+      label: 'Bartender', 
+      icon: FaUser, 
+      color: 'success', 
+      description: 'Puede editar stock y productos' 
+    },
+    { 
+      value: 'guest', 
+      label: 'Mesero/Guest', 
+      icon: FaEye, 
+      color: 'info', 
+      description: 'Solo lectura, no puede editar' 
+    }
   ];
 
   useEffect(() => {
@@ -57,7 +82,7 @@ function UserManagement({ user, userRole }) {
     setFormData({
       email: '',
       name: '',
-      role: 'bartender',
+      role: 'guest',
       active: true,
       password: ''
     });
@@ -69,7 +94,7 @@ function UserManagement({ user, userRole }) {
     setFormData({
       email: user.email || '',
       name: user.name || '',
-      role: user.role || 'bartender',
+      role: user.role || 'guest',
       active: user.active !== false,
       password: ''
     });
@@ -149,7 +174,7 @@ function UserManagement({ user, userRole }) {
   };
 
   const getRoleBadge = (role) => {
-    const roleInfo = roles.find(r => r.value === role) || roles[2];
+    const roleInfo = roles.find(r => r.value === role) || roles[3];
     const Icon = roleInfo.icon;
     
     return (
@@ -300,6 +325,17 @@ function UserManagement({ user, userRole }) {
                   </option>
                 ))}
               </Form.Select>
+              <Form.Text className="text-muted">
+                <div className="mt-2">
+                  <strong>Permisos por rol:</strong>
+                  <ul className="mb-0 mt-1" style={{ fontSize: '0.9em' }}>
+                    <li><strong>Admin:</strong> Control total (usuarios, proveedores, inventario)</li>
+                    <li><strong>Manager:</strong> Puede editar/eliminar productos y proveedores</li>
+                    <li><strong>Bartender:</strong> Puede actualizar stock y editar productos</li>
+                    <li><strong>Mesero/Guest:</strong> Solo puede ver cantidades (sin editar)</li>
+                  </ul>
+                </div>
+              </Form.Text>
             </Form.Group>
 
             <Form.Group className="mb-3">

@@ -19,7 +19,6 @@ function InventoryList({ inventory, user, userRole, providers }) {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
   const [isMobile, setIsMobile] = useState(() => {
-    // Inicializar como móvil si es PWA instalada o pantalla pequeña
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                   window.navigator.standalone === true;
     return window.innerWidth < 768 || isPWA;
@@ -42,25 +41,22 @@ function InventoryList({ inventory, user, userRole, providers }) {
 
   React.useEffect(() => {
     const checkMobile = () => {
-      // Detectar móvil por ancho de pantalla O si es PWA instalada
       const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                     window.navigator.standalone === true;
-      const isSmallScreen = window.innerWidth < 768;
-      
-      setIsMobile(isSmallScreen || isPWA);
+      setIsMobile(window.innerWidth < 768 || isPWA);
     };
     
-    checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   const filteredInventory = inventory.filter(item => {
     const matchesSearch = item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.marca?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.codigo_barras?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+                         item.marca?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.codigo_barras?.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesCategory = categoryFilter === 'all' || item.tipo === categoryFilter;
+    
     const matchesStock = 
       stockFilter === 'all' ? true :
       stockFilter === 'low' ? (item.stock <= (item.umbral_low || 5) && item.stock > 0) :
@@ -223,94 +219,101 @@ function InventoryList({ inventory, user, userRole, providers }) {
         <QuickStockMobile 
           inventory={inventory}
           user={user}
+          userRole={userRole}
           onToggleView={toggleView}
         />
       ) : (
         <>
-          <h2 className="mb-4">📦 Inventario de Bar</h2>
-
-          {/* Panel de Notificaciones */}
-          <NotificationSettings />
-
           <Row className="mb-4">
-            <Col md={3} sm={6} className="mb-3">
-              <Card className="text-center">
-                <Card.Body>
-                  <h3 className="text-primary mb-1">{stats.total}</h3>
-                  <small className="text-muted">Total Productos</small>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3} sm={6} className="mb-3">
-              <Card className="text-center">
-                <Card.Body>
-                  <h3 className="text-warning mb-1">{stats.lowStock}</h3>
-                  <small className="text-muted">Stock Bajo</small>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3} sm={6} className="mb-3">
-              <Card className="text-center">
-                <Card.Body>
-                  <h3 className="text-danger mb-1">{stats.outOfStock}</h3>
-                  <small className="text-muted">Sin Stock</small>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3} sm={6} className="mb-3">
-              <Card className="text-center">
-                <Card.Body>
-                  <h3 className="text-info mb-1">{stats.important}</h3>
-                  <small className="text-muted">Importantes</small>
-                </Card.Body>
-              </Card>
+            <Col>
+              <h2 className="mb-3">
+                🍸 Inventario del Bar
+              </h2>
+              <Row className="g-3">
+                <Col md={3}>
+                  <Card className="h-100 shadow-sm">
+                    <Card.Body>
+                      <h6 className="text-muted mb-2">Total Productos</h6>
+                      <h3 className="mb-0">{stats.total}</h3>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="h-100 shadow-sm border-warning">
+                    <Card.Body>
+                      <h6 className="text-muted mb-2">Stock Bajo</h6>
+                      <h3 className="mb-0 text-warning">{stats.lowStock}</h3>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="h-100 shadow-sm border-danger">
+                    <Card.Body>
+                      <h6 className="text-muted mb-2">Sin Stock</h6>
+                      <h3 className="mb-0 text-danger">{stats.outOfStock}</h3>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="h-100 shadow-sm border-primary">
+                    <Card.Body>
+                      <h6 className="text-muted mb-2">Importantes</h6>
+                      <h3 className="mb-0 text-primary">{stats.important}</h3>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
             </Col>
           </Row>
 
-          <Card className="mb-3" style={{ overflow: 'visible' }}>
-            <Card.Body style={{ overflow: 'visible' }}>
-              <Row className="align-items-center">
-                <Col md={4} className="mb-3 mb-md-0">
+          <Card className="shadow-sm">
+            <Card.Body>
+              <Row className="mb-3 align-items-center">
+                <Col md={4}>
                   <InputGroup>
-                    <InputGroup.Text><FaSearch /></InputGroup.Text>
+                    <InputGroup.Text>
+                      <FaSearch />
+                    </InputGroup.Text>
                     <Form.Control
-                      placeholder="Buscar producto, código, SKU..."
+                      type="text"
+                      placeholder="Buscar productos..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </InputGroup>
                 </Col>
-
-                <Col md={8} className="text-md-end">
-                  {isMobile && forceDesktopView && (
+                <Col md={8} className="text-end">
+                  {(userRole === 'admin' || userRole === 'manager' || userRole === 'bartender') && (
+                    <>
+                      <Button 
+                        variant="primary" 
+                        onClick={handleAddItem}
+                        className="me-2"
+                      >
+                        <FaPlus /> Agregar Producto
+                      </Button>
+                      <Button 
+                        variant="outline-secondary" 
+                        onClick={() => setShowBarcodeScanner(true)}
+                        className="me-2"
+                      >
+                        <FaBarcode /> Escanear
+                      </Button>
+                    </>
+                  )}
+                  {isMobile && (
                     <Button 
-                      variant="outline-secondary" 
+                      variant="outline-info" 
                       onClick={toggleView}
                       className="me-2"
                     >
-                      <FaMobileAlt className="me-2" />
-                      Vista Móvil
+                      <FaMobileAlt /> Vista Móvil
                     </Button>
                   )}
-
-                  <Button 
-                    variant="success" 
-                    onClick={() => setShowBarcodeScanner(true)}
-                    className="me-2"
-                  >
-                    <FaBarcode className="me-2" />
-                    Escanear
-                  </Button>
-
-                  <Button variant="primary" onClick={handleAddItem} className="me-2">
-                    <FaPlus className="me-2" />
-                    Agregar Producto
-                  </Button>
-
-                  <Dropdown as={ButtonGroup}>
-                    <Dropdown.Toggle variant="secondary" id="dropdown-pdf">
-                      <FaFilePdf className="me-2" />
-                      Reportes PDF
+                  <NotificationSettings />
+                  <Dropdown className="d-inline ms-2">
+                    <Dropdown.Toggle variant="success" id="dropdown-pdf">
+                      <FaFilePdf /> Reportes PDF
                     </Dropdown.Toggle>
                     <Dropdown.Menu>
                       <Dropdown.Item onClick={() => generatePDF('complete')}>
@@ -356,51 +359,49 @@ function InventoryList({ inventory, user, userRole, providers }) {
                     value={stockFilter}
                     onChange={(e) => setStockFilter(e.target.value)}
                   >
-                    <option value="all">Todos los niveles de stock</option>
+                    <option value="all">Todos los stocks</option>
                     <option value="good">Stock Normal</option>
                     <option value="low">Stock Bajo</option>
                     <option value="out">Sin Stock</option>
                   </Form.Select>
                 </Col>
               </Row>
-            </Card.Body>
-          </Card>
 
-          <Card className="shadow-sm border-0">
-            <Card.Body className="p-0">
-              <div className="table-responsive">
-                <Table hover className="mb-0" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-                  <thead style={{ backgroundColor: 'var(--bg-tertiary)', borderBottom: '2px solid var(--border-medium)' }}>
+              <div className="table-responsive mt-4">
+                <Table hover className="align-middle">
+                  <thead className="table-light">
                     <tr>
-                      <th style={{ width: '50px', padding: '1rem' }}></th>
-                      <th style={{ minWidth: '250px', padding: '1rem' }}>Producto</th>
-                      <th style={{ width: '130px', padding: '1rem' }}>Categoría</th>
-                      <th className="text-center" style={{ width: '120px', padding: '1rem' }}>Stock</th>
-                      <th style={{ width: '180px', padding: '1rem' }}>Proveedor</th>
-                      <th className="text-center" style={{ width: '120px', padding: '1rem' }}>Estado</th>
-                      <th className="text-center" style={{ width: '140px', padding: '1rem' }}>Acciones</th>
+                      <th style={{ width: '50px' }}></th>
+                      <th>Producto</th>
+                      <th>Categoría</th>
+                      <th className="text-center">Stock</th>
+                      <th>Proveedor</th>
+                      <th className="text-center">Estado</th>
+                      <th className="text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredInventory.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center text-muted py-4">
-                          {searchTerm || categoryFilter !== 'all' || stockFilter !== 'all' 
-                            ? 'No se encontraron productos con los filtros aplicados'
-                            : 'No hay productos en el inventario'}
+                        <td colSpan="7" className="text-center py-4">
+                          <p className="text-muted mb-0">
+                            {searchTerm || categoryFilter !== 'all' || stockFilter !== 'all'
+                              ? 'No se encontraron productos con los filtros aplicados'
+                              : 'No hay productos en el inventario'}
+                          </p>
                         </td>
                       </tr>
                     ) : (
-                      filteredInventory.map(item => {
+                      filteredInventory.map((item) => {
                         const provider = providers.find(p => p.id === item.proveedor_id);
+                        
                         return (
-                          <tr key={item.id} className={item.importante ? 'important-product' : ''} style={{ borderBottom: '1px solid var(--border-light)', backgroundColor: 'var(--bg-primary)' }}>
-                            <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                          <tr key={item.id}>
+                            <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               <Button
                                 variant="link"
-                                size="sm"
-                                onClick={() => handleToggleImportante(item)}
                                 className="p-0"
+                                onClick={() => handleToggleImportante(item)}
                                 style={{ fontSize: '1.2rem' }}
                               >
                                 {item.importante ? 
@@ -412,35 +413,50 @@ function InventoryList({ inventory, user, userRole, providers }) {
                             <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               <div>
                                 <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                                  {item.marca ? `${item.marca} - ${item.nombre}` : item.nombre}
+                                  {item.marca ? `${item.marca} - ` : ''}{item.nombre}
                                 </strong>
-                                {item.codigo_barras && (
-                                  <div>
-                                    <small className="text-muted" style={{ fontSize: '0.8rem' }}>
-                                      {item.codigo_barras}
-                                    </small>
-                                  </div>
-                                )}
                               </div>
+                              {item.codigo_barras && (
+                                <small className="text-muted" style={{ fontSize: '0.8rem' }}>
+                                  📦 {item.codigo_barras}
+                                </small>
+                              )}
                             </td>
                             <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               {getCategoryBadge(item.tipo)}
                             </td>
                             <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                              <input
-                                type="number"
-                                value={item.stock || 0}
-                                onChange={(e) => handleQuickStockUpdate(item, e.target.value)}
-                                onBlur={(e) => handleQuickStockUpdate(item, e.target.value)}
-                                className="form-control form-control-sm text-center stock-input"
-                                style={{
-                                  width: '80px',
-                                  display: 'inline-block',
+                              {(userRole === 'admin' || userRole === 'manager' || userRole === 'bartender') ? (
+                                <Form.Control
+                                  type="number"
+                                  value={item.stock || 0}
+                                  onChange={(e) => handleQuickStockUpdate(item, e.target.value)}
+                                  className="stock-input"
+                                  style={{ 
+                                    width: '90px',
+                                    textAlign: 'center',
+                                    fontWeight: 'bold',
+                                    color: getStockColor(item),
+                                    fontSize: '1rem',
+                                    padding: '0.5rem',
+                                    margin: '0 auto',
+                                    display: 'inline-block',
+                                    backgroundColor: 'transparent',
+                                    border: '2px solid var(--border-light)',
+                                    borderRadius: '8px'
+                                  }}
+                                  min="0"
+                                  step="0.5"
+                                />
+                              ) : (
+                                <span style={{
                                   fontWeight: 'bold',
-                                  color: getStockColor(item)
-                                }}
-                                min="0"
-                              />
+                                  color: getStockColor(item),
+                                  fontSize: '1rem'
+                                }}>
+                                  {item.stock || 0}
+                                </span>
+                              )}
                             </td>
                             <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               {provider ? (
@@ -454,13 +470,15 @@ function InventoryList({ inventory, user, userRole, providers }) {
                             </td>
                             <td className="text-center" style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               <ButtonGroup size="sm">
-                                <Button 
-                                  variant="outline-primary" 
-                                  onClick={() => handleEditItem(item)}
-                                  style={{ padding: '0.4rem 0.8rem' }}
-                                >
-                                  <FaEdit />
-                                </Button>
+                                {(userRole === 'admin' || userRole === 'manager' || userRole === 'bartender') && (
+                                  <Button 
+                                    variant="outline-primary" 
+                                    onClick={() => handleEditItem(item)}
+                                    style={{ padding: '0.4rem 0.8rem' }}
+                                  >
+                                    <FaEdit />
+                                  </Button>
+                                )}
                                 {(userRole === 'admin' || userRole === 'manager') && (
                                   <Button 
                                     variant="outline-danger"
@@ -491,6 +509,7 @@ function InventoryList({ inventory, user, userRole, providers }) {
         user={user}
         providers={providers}
         categories={categories}
+        userRole={userRole}
       />
 
       <BarcodeScanner

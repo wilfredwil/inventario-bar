@@ -64,7 +64,6 @@ function App() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Verificar si ya está instalado
     if (window.matchMedia('(display-mode: standalone)').matches) {
       console.log('ℹ️ App ya está instalada');
     }
@@ -87,13 +86,13 @@ function App() {
           const userDoc = snapshot.docs.find(doc => doc.data().email === currentUser.email);
           
           if (userDoc) {
-            setUserRole(userDoc.data().role || 'bartender');
+            setUserRole(userDoc.data().role || 'guest');
           } else {
-            setUserRole('bartender');
+            setUserRole('guest');
           }
         } catch (error) {
           console.error('Error obteniendo rol:', error);
-          setUserRole('bartender');
+          setUserRole('guest');
         }
       } else {
         setUser(null);
@@ -113,64 +112,52 @@ function App() {
       
       const nameA = a.marca ? `${a.marca} ${a.nombre}` : a.nombre;
       const nameB = b.marca ? `${b.marca} ${b.nombre}` : b.nombre;
-      return nameA.toLowerCase().localeCompare(nameB.toLowerCase());
+      
+      return nameA.localeCompare(nameB);
     });
   };
 
-  // Listener de inventario
+  // Cargar inventario en tiempo real
   useEffect(() => {
     if (!user) return;
 
-    const inventoryRef = collection(db, 'inventario');
-    const q = query(inventoryRef);
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setInventory(sortInventory(items));
-    });
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'inventario')),
+      (snapshot) => {
+        const items = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setInventory(sortInventory(items));
+      }
+    );
 
     return () => unsubscribe();
   }, [user]);
 
-  // Listener de proveedores
+  // Cargar proveedores en tiempo real
   useEffect(() => {
     if (!user) return;
 
-    const loadProviders = async () => {
-      try {
-        const providersRef = collection(db, 'providers');
-        const snapshot = await getDocs(providersRef);
-        
-        const providersList = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(p => {
-            const nombreEmpresa = p.empresa || p.nombre || '';
-            return nombreEmpresa.trim() !== '';
-          })
-          .sort((a, b) => {
-            const nameA = (a.empresa || a.nombre || '').toLowerCase();
-            const nameB = (b.empresa || b.nombre || '').toLowerCase();
-            return nameA.localeCompare(nameB);
-          });
-        
-        console.log('✅ Proveedores cargados:', providersList.length);
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'providers')),
+      (snapshot) => {
+        const providersList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
         setProviders(providersList);
-      } catch (error) {
-        console.error('❌ Error cargando proveedores:', error);
       }
-    };
+    );
 
-    loadProviders();
+    return () => unsubscribe();
   }, [user]);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error('Error cerrando sesión:', error);
     }
   };
 
@@ -179,18 +166,7 @@ function App() {
   };
 
   const handleInstallClick = async () => {
-    console.log('🎯 Click en botón de instalación');
-    
     if (!deferredPrompt) {
-      console.log('❌ No hay deferredPrompt disponible');
-      
-      // Si ya está instalada
-      if (window.matchMedia('(display-mode: standalone)').matches) {
-        alert('✅ La aplicación ya está instalada');
-        return;
-      }
-      
-      // Mostrar instrucciones manuales
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isAndroid = /Android/.test(navigator.userAgent);
       
@@ -219,6 +195,9 @@ function App() {
     setDeferredPrompt(null);
     setShowInstallButton(false);
   };
+
+  // Verificar si el usuario tiene acceso a la sección avanzada
+  const hasAdvancedAccess = userRole === 'admin' || userRole === 'manager';
 
   if (loading) {
     return (
@@ -260,20 +239,22 @@ function App() {
                 >
                   Inventario
                 </Nav.Link>
-                <Nav.Link 
-                  active={activeView === 'statistics'} 
-                  onClick={() => setActiveView('statistics')}
-                >
-                  Estadísticas
-                </Nav.Link>
-                <Nav.Link 
-                  active={activeView === 'history'} 
-                  onClick={() => setActiveView('history')}
-                >
-                  Historial
-                </Nav.Link>
-                {(userRole === 'admin' || userRole === 'manager') && (
+                
+                {/* Solo admin y manager pueden ver estas secciones */}
+                {hasAdvancedAccess && (
                   <>
+                    <Nav.Link 
+                      active={activeView === 'statistics'} 
+                      onClick={() => setActiveView('statistics')}
+                    >
+                      Estadísticas
+                    </Nav.Link>
+                    <Nav.Link 
+                      active={activeView === 'history'} 
+                      onClick={() => setActiveView('history')}
+                    >
+                      Historial
+                    </Nav.Link>
                     <Nav.Link 
                       active={activeView === 'providers'} 
                       onClick={() => setActiveView('providers')}
@@ -336,13 +317,13 @@ function App() {
               providers={providers}
             />
           )}
-          {activeView === 'statistics' && (
+          {activeView === 'statistics' && hasAdvancedAccess && (
             <Statistics inventory={inventory} />
           )}
-          {activeView === 'history' && (
+          {activeView === 'history' && hasAdvancedAccess && (
             <HistoryLog user={user} userRole={userRole} />
           )}
-          {activeView === 'providers' && (userRole === 'admin' || userRole === 'manager') && (
+          {activeView === 'providers' && hasAdvancedAccess && (
             <ProviderManagement providers={providers} user={user} />
           )}
           {activeView === 'users' && userRole === 'admin' && (
